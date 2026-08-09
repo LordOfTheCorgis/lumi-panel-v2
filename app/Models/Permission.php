@@ -20,6 +20,7 @@ class Permission extends Model
     public const ACTION_CONTROL_START = 'control.start';
     public const ACTION_CONTROL_STOP = 'control.stop';
     public const ACTION_CONTROL_RESTART = 'control.restart';
+    public const ACTION_CONTROL_TXADMIN = 'control.txadmin';
 
     public const ACTION_DATABASE_READ = 'database.read';
     public const ACTION_DATABASE_CREATE = 'database.create';
@@ -113,6 +114,7 @@ class Permission extends Model
                 'start' => 'Allows a user to start the server if it is stopped.',
                 'stop' => 'Allows a user to stop a server if it is running.',
                 'restart' => 'Allows a user to perform a server restart. This allows them to start the server if it is offline, but not put the server in a completely stopped state.',
+                'txadmin' => 'Allows a user to view and open the txAdmin panel from this server'
             ],
         ],
 
