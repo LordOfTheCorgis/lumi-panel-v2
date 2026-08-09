@@ -1,10 +1,9 @@
 import React from 'react';
-import { NavLink, Route, Switch } from 'react-router-dom';
-import NavigationBar from '@/components/NavigationBar';
+import { Route, Switch } from 'react-router-dom';
+import Sidebar from '@/components/Sidebar';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { NotFound } from '@/components/elements/ScreenBlock';
 import TransitionRouter from '@/TransitionRouter';
-import SubNavigation from '@/components/elements/SubNavigation';
 import { useLocation } from 'react-router';
 import Spinner from '@/components/elements/Spinner';
 import routes from '@/routers/routes';
@@ -13,21 +12,23 @@ export default () => {
     const location = useLocation();
 
     return (
-        <>
-            <NavigationBar />
-            {location.pathname.startsWith('/account') && (
-                <SubNavigation>
-                    <div>
-                        {routes.account
-                            .filter((route) => !!route.name)
-                            .map(({ path, name, exact = false }) => (
-                                <NavLink key={path} to={`/account/${path}`.replace('//', '/')} exact={exact}>
-                                    {name}
-                                </NavLink>
-                            ))}
-                    </div>
-                </SubNavigation>
-            )}
+        <div className={'md:pl-64'}>
+            <Sidebar>
+                <Sidebar.Section label={'Account'}>
+                    {routes.account
+                        .filter((route) => !!route.name)
+                        .map(({ path, name, icon, exact = false }) => (
+                            <Sidebar.Link
+                                key={path}
+                                to={`/account/${path}`.replace('//', '/')}
+                                icon={icon}
+                                exact={exact}
+                            >
+                                {name}
+                            </Sidebar.Link>
+                        ))}
+                </Sidebar.Section>
+            </Sidebar>
             <TransitionRouter>
                 <React.Suspense fallback={<Spinner centered />}>
                     <Switch location={location}>
@@ -45,6 +46,6 @@ export default () => {
                     </Switch>
                 </React.Suspense>
             </TransitionRouter>
-        </>
+        </div>
     );
 };

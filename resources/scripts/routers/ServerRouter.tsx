@@ -1,20 +1,17 @@
 import TransferListener from '@/components/server/TransferListener';
 import React, { useEffect, useState } from 'react';
-import { NavLink, Route, Switch, useRouteMatch } from 'react-router-dom';
-import NavigationBar from '@/components/NavigationBar';
+import { Route, Switch, useRouteMatch } from 'react-router-dom';
+import Sidebar from '@/components/Sidebar';
 import TransitionRouter from '@/TransitionRouter';
 import WebsocketHandler from '@/components/server/WebsocketHandler';
 import { ServerContext } from '@/state/server';
-import { CSSTransition } from 'react-transition-group';
 import Can from '@/components/elements/Can';
 import Spinner from '@/components/elements/Spinner';
 import { NotFound, ServerError } from '@/components/elements/ScreenBlock';
 import { httpErrorToHuman } from '@/api/http';
 import { useStoreState } from 'easy-peasy';
-import SubNavigation from '@/components/elements/SubNavigation';
 import InstallListener from '@/components/server/InstallListener';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router';
 import ConflictStateRenderer from '@/components/server/ConflictStateRenderer';
@@ -30,6 +27,7 @@ export default () => {
 
     const id = ServerContext.useStoreState((state) => state.server.data?.id);
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
+    const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
     const isFiveM = ServerContext.useStoreState(
         (state) => state.server.data?.variables.some((v) => v.envVariable === 'TXADMIN_PORT') ?? false
     );
@@ -66,8 +64,42 @@ export default () => {
     }, [match.params.id]);
 
     return (
-        <React.Fragment key={'server-router'}>
-            <NavigationBar />
+        <div className={'md:pl-64'} key={'server-router'}>
+            <Sidebar>
+                {!!uuid && !!id && (
+                    <Sidebar.Section label={serverName || 'Server'}>
+                        {routes.server
+                            .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
+                            .map((route) =>
+                                route.permission ? (
+                                    <Can key={route.path} action={route.permission} matchAny>
+                                        <Sidebar.Link to={to(route.path, true)} icon={route.icon} exact={route.exact}>
+                                            {route.name}
+                                        </Sidebar.Link>
+                                    </Can>
+                                ) : (
+                                    <Sidebar.Link
+                                        key={route.path}
+                                        to={to(route.path, true)}
+                                        icon={route.icon}
+                                        exact={route.exact}
+                                    >
+                                        {route.name}
+                                    </Sidebar.Link>
+                                )
+                            )}
+                        {rootAdmin && (
+                            <Sidebar.ExternalLink
+                                href={`/admin/servers/view/${serverId}`}
+                                icon={faExternalLinkAlt}
+                                newTab
+                            >
+                                Manage Server
+                            </Sidebar.ExternalLink>
+                        )}
+                    </Sidebar.Section>
+                )}
+            </Sidebar>
             {!uuid || !id ? (
                 error ? (
                     <ServerError message={error} />
@@ -76,33 +108,6 @@ export default () => {
                 )
             ) : (
                 <>
-                    <CSSTransition timeout={150} classNames={'fade'} appear in>
-                        <SubNavigation>
-                            <div>
-                                {routes.server
-                                    .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
-                                    .map((route) =>
-                                        route.permission ? (
-                                            <Can key={route.path} action={route.permission} matchAny>
-                                                <NavLink to={to(route.path, true)} exact={route.exact}>
-                                                    {route.name}
-                                                </NavLink>
-                                            </Can>
-                                        ) : (
-                                            <NavLink key={route.path} to={to(route.path, true)} exact={route.exact}>
-                                                {route.name}
-                                            </NavLink>
-                                        )
-                                    )}
-                                {rootAdmin && (
-                                    // eslint-disable-next-line react/jsx-no-target-blank
-                                    <a href={`/admin/servers/view/${serverId}`} target={'_blank'}>
-                                        <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                    </a>
-                                )}
-                            </div>
-                        </SubNavigation>
-                    </CSSTransition>
                     <InstallListener />
                     <TransferListener />
                     <WebsocketHandler />
@@ -128,6 +133,6 @@ export default () => {
                     )}
                 </>
             )}
-        </React.Fragment>
+        </div>
     );
 };

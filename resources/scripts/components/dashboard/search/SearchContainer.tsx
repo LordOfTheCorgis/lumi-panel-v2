@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import useEventListener from '@/plugins/useEventListener';
 import SearchModal from '@/components/dashboard/search/SearchModal';
-import Tooltip from '@/components/elements/tooltip/Tooltip';
+import { SidebarIconStyle, SidebarLinkStyle } from '@/components/elements/SidebarStyles';
 
 export default () => {
     const [visible, setVisible] = useState(false);
@@ -19,11 +19,13 @@ export default () => {
     return (
         <>
             {visible && <SearchModal appear visible={visible} onDismissed={() => setVisible(false)} />}
-            <Tooltip placement={'bottom'} content={'Search'}>
-                <div className={'navigation-link'} onClick={() => setVisible(true)}>
-                    <FontAwesomeIcon icon={faSearch} />
-                </div>
-            </Tooltip>
+            <button onClick={() => setVisible(true)} className={SidebarLinkStyle}>
+                <span className={SidebarIconStyle}>
+                    <FontAwesomeIcon icon={faSearch} fixedWidth />
+                </span>
+                <span className={'truncate'}>Search</span>
+                <span className={'ml-auto text-2xs text-neutral-500 tracking-wide'}>⌘/</span>
+            </button>
         </>
     );
 };
