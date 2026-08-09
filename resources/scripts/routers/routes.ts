@@ -1,5 +1,6 @@
 import React, { lazy } from 'react';
 import ServerConsole from '@/components/server/console/ServerConsoleContainer';
+import PlayersContainer from '@/components/server/players/PlayersContainer';
 import DatabasesContainer from '@/components/server/databases/DatabasesContainer';
 import ScheduleContainer from '@/components/server/schedules/ScheduleContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
@@ -33,6 +34,9 @@ interface RouteDefinition {
 
 interface ServerRouteDefinition extends RouteDefinition {
     permission: string | string[] | null;
+    // Restricts this route to servers whose egg exposes the TXADMIN_PORT variable, the
+    // same heuristic used to identify FiveM-capable eggs elsewhere in the panel.
+    requiresFiveM?: boolean;
 }
 
 interface Routes {
@@ -139,6 +143,13 @@ export default {
             permission: 'activity.*',
             name: 'Activity',
             component: ServerActivityLogContainer,
+        },
+        {
+            path: '/players',
+            permission: 'control.players',
+            name: 'Players',
+            component: PlayersContainer,
+            requiresFiveM: true,
         },
     ],
 } as Routes;

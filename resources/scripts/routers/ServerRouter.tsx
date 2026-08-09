@@ -30,6 +30,9 @@ export default () => {
 
     const id = ServerContext.useStoreState((state) => state.server.data?.id);
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
+    const isFiveM = ServerContext.useStoreState(
+        (state) => state.server.data?.variables.some((v) => v.envVariable === 'TXADMIN_PORT') ?? false
+    );
     const inConflictState = ServerContext.useStoreState((state) => state.server.inConflictState);
     const serverId = ServerContext.useStoreState((state) => state.server.data?.internalId);
     const getServer = ServerContext.useStoreActions((actions) => actions.server.getServer);
@@ -77,7 +80,7 @@ export default () => {
                         <SubNavigation>
                             <div>
                                 {routes.server
-                                    .filter((route) => !!route.name)
+                                    .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
                                     .map((route) =>
                                         route.permission ? (
                                             <Can key={route.path} action={route.permission} matchAny>
@@ -109,13 +112,15 @@ export default () => {
                         <ErrorBoundary>
                             <TransitionRouter>
                                 <Switch location={location}>
-                                    {routes.server.map(({ path, permission, component: Component }) => (
-                                        <PermissionRoute key={path} permission={permission} path={to(path)} exact>
-                                            <Spinner.Suspense>
-                                                <Component />
-                                            </Spinner.Suspense>
-                                        </PermissionRoute>
-                                    ))}
+                                    {routes.server
+                                        .filter((route) => !route.requiresFiveM || isFiveM)
+                                        .map(({ path, permission, component: Component }) => (
+                                            <PermissionRoute key={path} permission={permission} path={to(path)} exact>
+                                                <Spinner.Suspense>
+                                                    <Component />
+                                                </Spinner.Suspense>
+                                            </PermissionRoute>
+                                        ))}
                                     <Route path={'*'} component={NotFound} />
                                 </Switch>
                             </TransitionRouter>
