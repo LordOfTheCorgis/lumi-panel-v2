@@ -1,4 +1,17 @@
-const colors = require('tailwindcss/colors');
+// Lumix Solutions brand palette. 500 is the brand color (#ff4c4c); the rest of
+// the ramp is derived from it so every Tailwind shade lands on-brand.
+const lumi = {
+    50: '#fff1f1',
+    100: '#ffdfdf',
+    200: '#ffc4c4',
+    300: '#ffa0a0',
+    400: '#ff7676',
+    500: '#ff4c4c',
+    600: '#ed2020',
+    700: '#c81414',
+    800: '#a51414',
+    900: '#881818',
+};
 
 const gray = {
     50: 'hsl(216, 33%, 97%)',
@@ -24,12 +37,15 @@ module.exports = {
             },
             colors: {
                 black: '#131a20',
-                // "primary" and "neutral" are deprecated, prefer the use of "blue" and "gray"
-                // in new code.
-                primary: colors.blue,
+                // Brand color. Prefer "lumi" in new code; "primary", "blue" and "cyan"
+                // are aliases kept so upstream Pterodactyl markup picks up the brand
+                // without a rewrite.
+                lumi: lumi,
+                primary: lumi,
+                blue: lumi,
+                cyan: lumi,
                 gray: gray,
                 neutral: gray,
-                cyan: colors.cyan,
             },
             fontSize: {
                 '2xs': '0.625rem',
