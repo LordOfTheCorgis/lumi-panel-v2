@@ -10,8 +10,6 @@ use Webmozart\Assert\Assert;
 use Pterodactyl\Models\Server;
 use Illuminate\Support\Collection;
 use Pterodactyl\Models\Allocation;
-use Pterodactyl\Models\EggVariable;
-use Pterodactyl\Models\ServerVariable;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Models\Objects\DeploymentObject;
 use Pterodactyl\Repositories\Eloquent\ServerRepository;
@@ -24,13 +22,6 @@ use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
 class ServerCreationService
 {
     /**
-     * Env variable that, if present on the server's egg, is auto-populated with the
-     * port of the server's first additional allocation (e.g. txAdmin for FiveM eggs)
-     * so that it never needs to be configured by hand.
-     */
-    private const TXADMIN_ENV_VARIABLE = 'TXADMIN_PORT';
-
-    /**
      * ServerCreationService constructor.
      */
     public function __construct(
@@ -41,6 +32,7 @@ class ServerCreationService
         private ServerRepository $repository,
         private ServerDeletionService $serverDeletionService,
         private ServerVariableRepository $serverVariableRepository,
+        private TxAdminPortAssignmentService $txAdminPortAssignmentService,
         private VariableValidatorService $validatorService,
     ) {
     }
@@ -82,6 +74,8 @@ class ServerCreationService
             $data['nest_id'] = Egg::query()->findOrFail($data['egg_id'])->nest_id;
         }
 
+        $data = $this->injectTxAdminPort($data);
+
         $eggVariableData = $this->validatorService
             ->setUserLevel(User::USER_LEVEL_ADMIN)
             ->handle(Arr::get($data, 'egg_id'), Arr::get($data, 'environment', []));
@@ -98,7 +92,6 @@ class ServerCreationService
 
             $this->storeAssignedAllocations($server, $data);
             $this->storeEggVariables($server, $eggVariableData);
-            $this->assignTxAdminPortVariable($server, $data);
 
             return $server;
         }, 5);
@@ -193,37 +186,29 @@ class ServerCreationService
     }
 
     /**
-     * If this server's egg exposes a TXADMIN_PORT variable, bind it to the port of the
-     * server's first additional allocation. This is how txAdmin-capable eggs (e.g. FiveM)
-     * get their panel port without anyone having to type it into the variable by hand —
-     * the additional allocation is expected to already be reserved by the provisioning
-     * system (e.g. WHMCS) before server creation reaches this service.
+     * If the target egg exposes a TXADMIN_PORT variable and the caller has not already
+     * supplied an explicit value for it, inject the port of the first additional
+     * allocation so it flows through normal variable validation and storage untouched.
+     *
+     * This must run before validation (not after server creation) because a "required"
+     * rule on the variable would otherwise reject requests — such as those coming from
+     * WHMCS — that never explicitly set it, since the additional allocation is expected
+     * to already be reserved by the provisioning system before creation reaches here.
      */
-    private function assignTxAdminPortVariable(Server $server, array $data): void
+    private function injectTxAdminPort(array $data): array
     {
+        if (!empty(Arr::get($data, 'environment.' . TxAdminPortAssignmentService::ENV_VARIABLE))) {
+            return $data;
+        }
+
         $additionalAllocationId = Arr::first(Arr::get($data, 'allocation_additional', []));
-        if (empty($additionalAllocationId)) {
-            return;
+        $port = $this->txAdminPortAssignmentService->resolvePort(Arr::get($data, 'egg_id'), $additionalAllocationId);
+
+        if ($port !== null) {
+            $data['environment'][TxAdminPortAssignmentService::ENV_VARIABLE] = (string) $port;
         }
 
-        $variable = EggVariable::query()
-            ->where('egg_id', $server->egg_id)
-            ->where('env_variable', self::TXADMIN_ENV_VARIABLE)
-            ->first();
-
-        if (!$variable) {
-            return;
-        }
-
-        $allocation = Allocation::query()->find($additionalAllocationId);
-        if (!$allocation) {
-            return;
-        }
-
-        ServerVariable::query()->updateOrCreate(
-            ['server_id' => $server->id, 'variable_id' => $variable->id],
-            ['variable_value' => (string) $allocation->port]
-        );
+        return $data;
     }
 
     /**

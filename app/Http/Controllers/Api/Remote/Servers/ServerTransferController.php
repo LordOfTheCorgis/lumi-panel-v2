@@ -3,6 +3,7 @@
 namespace Pterodactyl\Http\Controllers\Api\Remote\Servers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Pterodactyl\Models\Node;
 use Webmozart\Assert\Assert;
 use Illuminate\Http\Response;
@@ -15,6 +16,7 @@ use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Exceptions\Http\HttpForbiddenException;
 use Pterodactyl\Repositories\Eloquent\ServerRepository;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
+use Pterodactyl\Services\Servers\TxAdminPortAssignmentService;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
 
@@ -27,6 +29,7 @@ class ServerTransferController extends Controller
         private ConnectionInterface $connection,
         private ServerRepository $repository,
         private DaemonServerRepository $daemonServerRepository,
+        private TxAdminPortAssignmentService $txAdminPortAssignmentService,
     ) {
     }
 
@@ -88,6 +91,14 @@ class ServerTransferController extends Controller
                 'allocation_id' => $transfer->new_allocation,
                 'node_id' => $transfer->new_node,
             ]);
+
+            // The destination's additional allocation is not guaranteed to reuse the same
+            // port as the one freed above, so any egg variable derived from that port
+            // (e.g. txAdmin) needs to be repointed at the new allocation now.
+            $this->txAdminPortAssignmentService->syncStoredValue(
+                $server,
+                Arr::first($transfer->new_additional_allocations ?? [])
+            );
 
             $server = $server->fresh();
             $server->transfer->update(['successful' => true]);
