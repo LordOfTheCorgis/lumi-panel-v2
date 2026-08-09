@@ -1,107 +1,35 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import CodeMirror from 'codemirror';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Compartment, EditorState, Extension, Prec } from '@codemirror/state';
+import {
+    EditorView,
+    crosshairCursor,
+    drawSelection,
+    dropCursor,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    highlightSpecialChars,
+    keymap,
+    lineNumbers,
+    rectangularSelection,
+} from '@codemirror/view';
+import { bracketMatching, codeFolding, foldGutter, foldKeymap, indentOnInput, indentUnit } from '@codemirror/language';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
+import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import styled from 'styled-components/macro';
 import tw from 'twin.macro';
 import modes from '@/modes';
-
-require('codemirror/lib/codemirror.css');
-require('codemirror/theme/ayu-mirage.css');
-require('codemirror/addon/edit/closebrackets');
-require('codemirror/addon/edit/closetag');
-require('codemirror/addon/edit/matchbrackets');
-require('codemirror/addon/edit/matchtags');
-require('codemirror/addon/edit/trailingspace');
-require('codemirror/addon/fold/foldcode');
-require('codemirror/addon/fold/foldgutter.css');
-require('codemirror/addon/fold/foldgutter');
-require('codemirror/addon/fold/brace-fold');
-require('codemirror/addon/fold/comment-fold');
-require('codemirror/addon/fold/indent-fold');
-require('codemirror/addon/fold/markdown-fold');
-require('codemirror/addon/fold/xml-fold');
-require('codemirror/addon/hint/css-hint');
-require('codemirror/addon/hint/html-hint');
-require('codemirror/addon/hint/javascript-hint');
-require('codemirror/addon/hint/show-hint.css');
-require('codemirror/addon/hint/show-hint');
-require('codemirror/addon/hint/sql-hint');
-require('codemirror/addon/hint/xml-hint');
-require('codemirror/addon/mode/simple');
-require('codemirror/addon/dialog/dialog.css');
-require('codemirror/addon/dialog/dialog');
-require('codemirror/addon/scroll/annotatescrollbar');
-require('codemirror/addon/scroll/scrollpastend');
-require('codemirror/addon/scroll/simplescrollbars.css');
-require('codemirror/addon/scroll/simplescrollbars');
-require('codemirror/addon/search/jump-to-line');
-require('codemirror/addon/search/match-highlighter');
-require('codemirror/addon/search/matchesonscrollbar.css');
-require('codemirror/addon/search/matchesonscrollbar');
-require('codemirror/addon/search/search');
-require('codemirror/addon/search/searchcursor');
-
-require('codemirror/mode/brainfuck/brainfuck');
-require('codemirror/mode/clike/clike');
-require('codemirror/mode/css/css');
-require('codemirror/mode/dart/dart');
-require('codemirror/mode/diff/diff');
-require('codemirror/mode/dockerfile/dockerfile');
-require('codemirror/mode/erlang/erlang');
-require('codemirror/mode/gfm/gfm');
-require('codemirror/mode/go/go');
-require('codemirror/mode/handlebars/handlebars');
-require('codemirror/mode/htmlembedded/htmlembedded');
-require('codemirror/mode/htmlmixed/htmlmixed');
-require('codemirror/mode/http/http');
-require('codemirror/mode/javascript/javascript');
-require('codemirror/mode/jsx/jsx');
-require('codemirror/mode/julia/julia');
-require('codemirror/mode/lua/lua');
-require('codemirror/mode/markdown/markdown');
-require('codemirror/mode/nginx/nginx');
-require('codemirror/mode/perl/perl');
-require('codemirror/mode/php/php');
-require('codemirror/mode/properties/properties');
-require('codemirror/mode/protobuf/protobuf');
-require('codemirror/mode/pug/pug');
-require('codemirror/mode/python/python');
-require('codemirror/mode/rpm/rpm');
-require('codemirror/mode/ruby/ruby');
-require('codemirror/mode/rust/rust');
-require('codemirror/mode/sass/sass');
-require('codemirror/mode/shell/shell');
-require('codemirror/mode/smarty/smarty');
-require('codemirror/mode/sql/sql');
-require('codemirror/mode/swift/swift');
-require('codemirror/mode/toml/toml');
-require('codemirror/mode/twig/twig');
-require('codemirror/mode/vue/vue');
-require('codemirror/mode/xml/xml');
-require('codemirror/mode/yaml/yaml');
+import { loadLanguage } from '@/lib/codemirror-languages';
+import { lumiEditorHighlighting, lumiEditorTheme } from '@/lib/codemirror-theme';
 
 const EditorContainer = styled.div`
     min-height: 16rem;
     height: calc(100vh - 20rem);
-    ${tw`relative`};
+    ${tw`relative flex flex-col rounded overflow-hidden bg-black`};
 
-    > div {
-        ${tw`rounded h-full`};
-    }
-
-    .CodeMirror {
-        font-size: 12px;
-        line-height: 1.375rem;
-    }
-
-    .CodeMirror-linenumber {
-        padding: 1px 12px 0 12px !important;
-    }
-
-    .CodeMirror-foldmarker {
-        color: #cbccc6;
-        text-shadow: none;
-        margin-left: 0.25rem;
-        margin-right: 0.25rem;
+    .cm-editor {
+        ${tw`flex-1 min-h-0`};
+        font-size: 13px;
     }
 `;
 
@@ -154,39 +82,101 @@ export default ({
     onModeChanged,
     onContentChanged,
 }: Props) => {
-    const [editor, setEditor] = useState<CodeMirror.Editor>();
+    const [view, setView] = useState<EditorView>();
+    const [position, setPosition] = useState({ line: 1, column: 1, selected: 0 });
 
-    const ref = useCallback((node) => {
+    // The container re-renders on every keystroke of the parent, so the callbacks
+    // arrive as fresh closures each time. Extensions read them through refs to
+    // avoid tearing down and rebuilding the editor's configuration.
+    const onSavedRef = useRef(onContentSaved);
+    const onChangedRef = useRef(onContentChanged);
+    onSavedRef.current = onContentSaved;
+    onChangedRef.current = onContentChanged;
+
+    // Holds the grammar currently loaded so a content swap can rebuild the state
+    // without dropping syntax highlighting.
+    const language = useRef<Extension>([]);
+    const languageCompartment = useRef(new Compartment());
+
+    const buildExtensions = useCallback(
+        (): Extension[] => [
+            // Placed above everything else so the browser's own save dialog never wins.
+            Prec.highest(
+                keymap.of([
+                    {
+                        key: 'Mod-s',
+                        preventDefault: true,
+                        run: () => {
+                            onSavedRef.current();
+                            return true;
+                        },
+                    },
+                ])
+            ),
+            lineNumbers(),
+            highlightActiveLineGutter(),
+            highlightSpecialChars(),
+            history(),
+            codeFolding(),
+            foldGutter(),
+            drawSelection(),
+            dropCursor(),
+            EditorState.allowMultipleSelections.of(true),
+            indentOnInput(),
+            indentUnit.of('    '),
+            bracketMatching(),
+            closeBrackets(),
+            autocompletion(),
+            rectangularSelection(),
+            crosshairCursor(),
+            highlightActiveLine(),
+            highlightSelectionMatches(),
+            search({ top: true }),
+            EditorView.lineWrapping,
+            keymap.of([
+                ...closeBracketsKeymap,
+                ...defaultKeymap,
+                ...searchKeymap,
+                ...historyKeymap,
+                ...foldKeymap,
+                ...completionKeymap,
+                indentWithTab,
+            ]),
+            lumiEditorTheme,
+            lumiEditorHighlighting,
+            languageCompartment.current.of(language.current),
+            EditorView.updateListener.of((update) => {
+                if (update.docChanged && onChangedRef.current) {
+                    onChangedRef.current(update.state.doc.toString());
+                }
+
+                if (update.docChanged || update.selectionSet) {
+                    const range = update.state.selection.main;
+                    const line = update.state.doc.lineAt(range.head);
+
+                    setPosition({
+                        line: line.number,
+                        column: range.head - line.from + 1,
+                        selected: range.to - range.from,
+                    });
+                }
+            }),
+        ],
+        []
+    );
+
+    const ref = useCallback((node: HTMLDivElement | null) => {
         if (!node) return;
 
-        const e = CodeMirror.fromTextArea(node, {
-            mode: 'text/plain',
-            theme: 'ayu-mirage',
-            indentUnit: 4,
-            smartIndent: true,
-            tabSize: 4,
-            indentWithTabs: false,
-            lineWrapping: true,
-            lineNumbers: true,
-            foldGutter: true,
-            fixedGutter: true,
-            scrollbarStyle: 'overlay',
-            coverGutterNextToScrollbar: false,
-            readOnly: false,
-            showCursorWhenSelecting: false,
-            autofocus: false,
-            spellcheck: true,
-            autocorrect: false,
-            autocapitalize: false,
-            lint: false,
-            // @ts-expect-error this property is actually used, the d.ts file for CodeMirror is incorrect.
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+        const instance = new EditorView({
+            state: EditorState.create({ doc: '', extensions: buildExtensions() }),
+            parent: node,
         });
 
-        setEditor(e);
+        setView(instance);
     }, []);
+
+    useEffect(() => () => view?.destroy(), [view]);
 
     useEffect(() => {
         if (filename === undefined) {
@@ -197,45 +187,55 @@ export default ({
     }, [filename]);
 
     useEffect(() => {
-        editor && editor.setOption('mode', mode);
-    }, [editor, mode]);
+        if (!view) return;
+
+        let cancelled = false;
+
+        loadLanguage(mode).then((extension) => {
+            // A rapid mode change can resolve out of order; only the newest wins.
+            if (cancelled) return;
+
+            language.current = extension;
+            view.dispatch({ effects: languageCompartment.current.reconfigure(extension) });
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [view, mode]);
 
     useEffect(() => {
-        if (editor) {
-            editor.setValue(initialContent || '');
-            // Reset the history so that "Ctrl+Z" doesn't delete the intial content
-            // we just set above.
-            editor.setHistory({ done: [], undone: [] });
-        }
-    }, [editor, initialContent]);
+        if (!view) return;
 
+        // Replacing the whole state (rather than dispatching a change) drops the
+        // undo history with it, so Ctrl+Z cannot rewind past the file's contents
+        // as it was loaded.
+        view.setState(EditorState.create({ doc: initialContent || '', extensions: buildExtensions() }));
+    }, [view, initialContent]);
+
+    // Deliberately runs on every render: the parent hands us a fresh closure each
+    // time and stores whatever we pass back, so a stale getter would save an
+    // empty document.
     useEffect(() => {
-        if (!editor || !onContentChanged) return;
-
-        const onChange = () => onContentChanged(editor.getValue());
-
-        editor.on('change', onChange);
-
-        return () => editor.off('change', onChange);
-    }, [editor, onContentChanged]);
-
-    useEffect(() => {
-        if (!editor) {
+        if (!view) {
             fetchContent(() => Promise.reject(new Error('no editor session has been configured')));
             return;
         }
 
-        editor.addKeyMap({
-            'Ctrl-S': () => onContentSaved(),
-            'Cmd-S': () => onContentSaved(),
-        });
-
-        fetchContent(() => Promise.resolve(editor.getValue()));
-    }, [editor, fetchContent, onContentSaved]);
+        fetchContent(() => Promise.resolve(view.state.doc.toString()));
+    });
 
     return (
         <EditorContainer style={style}>
-            <textarea ref={ref} />
+            <div ref={ref} css={tw`flex-1 min-h-0 overflow-hidden`} />
+            <div
+                css={tw`flex items-center justify-end gap-4 px-3 py-1 text-2xs text-neutral-400 bg-neutral-900 border-t border-neutral-700`}
+            >
+                {position.selected > 0 && <span>{position.selected} selected</span>}
+                <span>
+                    Ln {position.line}, Col {position.column}
+                </span>
+            </div>
         </EditorContainer>
     );
 };
