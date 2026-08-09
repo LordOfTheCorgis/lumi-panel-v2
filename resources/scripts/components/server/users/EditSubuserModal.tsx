@@ -16,6 +16,7 @@ import Button from '@/components/elements/Button';
 import PermissionTitleBox from '@/components/server/users/PermissionTitleBox';
 import asModal from '@/hoc/asModal';
 import PermissionRow from '@/components/server/users/PermissionRow';
+import SelectAllPermissionsButton from '@/components/server/users/SelectAllPermissionsButton';
 import ModalContext from '@/context/ModalContext';
 
 type Props = {
@@ -57,6 +58,14 @@ const EditSubuserModal = ({ subuser }: Props) => {
 
         return list.filter((key) => loggedInPermissions.indexOf(key) >= 0);
     }, [isRootAdmin, permissions, loggedInPermissions]);
+
+    // The subset of editable permissions that are actually rendered as checkboxes below;
+    // excludes the hidden "websocket" group so Select All can't silently grant a
+    // permission the user never saw a control for.
+    const selectablePermissions = useDeepCompareMemo(
+        () => editablePermissions.filter((key) => !key.startsWith('websocket.')),
+        [editablePermissions]
+    );
 
     const submit = (values: Values) => {
         setPropOverrides({ showSpinnerOverlay: true });
@@ -136,6 +145,11 @@ const EditSubuserModal = ({ subuser }: Props) => {
                     </div>
                 )}
                 <div css={tw`my-6`}>
+                    {canEditUser && selectablePermissions.length > 0 && (
+                        <div css={tw`flex justify-end mb-4`}>
+                            <SelectAllPermissionsButton permissions={selectablePermissions} />
+                        </div>
+                    )}
                     {Object.keys(permissions)
                         .filter((key) => key !== 'websocket')
                         .map((key, index) => (
