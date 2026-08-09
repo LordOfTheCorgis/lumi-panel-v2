@@ -13,6 +13,22 @@ const lumi = {
     900: '#881818',
 };
 
+// The brand color occupies the bright-red slot, so destructive/error UI is
+// pushed to a deeper crimson. Without this, a "delete" button and a "primary"
+// button are indistinguishable.
+const danger = {
+    50: '#fdf2f4',
+    100: '#fbe1e5',
+    200: '#f4bcc4',
+    300: '#e88e9b',
+    400: '#d55c6e',
+    500: '#bf2f45',
+    600: '#a32138',
+    700: '#851b2e',
+    800: '#691725',
+    900: '#52131e',
+};
+
 const gray = {
     50: 'hsl(216, 33%, 97%)',
     100: 'hsl(214, 15%, 91%)',
@@ -44,6 +60,7 @@ module.exports = {
                 primary: lumi,
                 blue: lumi,
                 cyan: lumi,
+                red: danger,
                 gray: gray,
                 neutral: gray,
             },
