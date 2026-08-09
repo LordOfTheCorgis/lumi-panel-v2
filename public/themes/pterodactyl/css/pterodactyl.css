@@ -23,7 +23,7 @@
  @import 'checkbox.css';
 
 .login-page {
-    background: #10529f;
+    background: #ff4c4c;
 }
 
 #login-position-elements {
@@ -166,7 +166,7 @@ p.small {
 }
 
 .hasFileHover {
-    border: 2px dashed #0087F7;
+    border: 2px dashed #ff4c4c;
     border-top: 0 !important;
     border-radius: 5px;
     margin: 0;
@@ -344,7 +344,7 @@ span[aria-labelledby="select2-pUserId-container"] {
 .select2-container{ width: 100% !important; }
 
 .nav-tabs-custom > .nav-tabs > li:hover {
-    border-top-color:#3c8dbc;
+    border-top-color:#ff4c4c;
 }
 
 .nav-tabs-custom > .nav-tabs > li.active.tab-danger, .nav-tabs-custom > .nav-tabs > li.tab-danger:hover {
@@ -545,7 +545,7 @@ body {
 }
 
 .skin-blue .sidebar-menu>li.active>a {
-    border-left-color: #099aa5;
+    border-left-color: #ff4c4c;
 }
 
 .text-gray {
@@ -579,13 +579,13 @@ body {
 }
 
 .btn-primary {
-    background-color: #0967d3;
-    border-color: #0550b3;
+    background-color: #ff4c4c;
+    border-color: #ed2020;
 }
 
 .btn.btn-primary:hover {
-    background-color: #0550b3;
-    border-color: #0345a0;
+    background-color: #ed2020;
+    border-color: #c81414;
 }
 
 .box {
@@ -636,7 +636,7 @@ body {
 }
 
 a {
-    color: #007eff;
+    color: #ff4c4c;
 }
 
 .nav-tabs-custom {
@@ -644,7 +644,7 @@ a {
 }
 
 .nav-tabs-custom>.nav-tabs>li.active {
-    border-top-color: #099aa5;
+    border-top-color: #ff4c4c;
 }
 
 .nav-tabs-custom>.nav-tabs>li.active>a {
@@ -731,7 +731,7 @@ code {
 }
 
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: #3c8dbc;
+    background-color: #ff4c4c;
 }
 
 .modal-body {
@@ -772,15 +772,15 @@ code {
 }
 
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: #099aa5;
+    background-color: #ff4c4c;
 }
 
 a {
-    color: #288afb;
+    color: #ff4c4c;
 }
 
 a:hover {
-    color: #206ec7;
+    color: #ed2020;
 }
 
 .form-control {
@@ -852,4 +852,54 @@ pre {
 
 .equal-height .box-body {
     flex: 1;
+}
+
+/* *******
+ * Lumix Solutions brand overrides. Anything below reclaims an accent that
+ * AdminLTE's skin-blue still paints with the upstream Pterodactyl blue.
+ ******* */
+
+.skin-blue .main-header .navbar .dropdown-menu li a:hover,
+.skin-blue .main-header li.user-header {
+    background-color: #ff4c4c;
+}
+
+.skin-blue .sidebar-menu>li:hover>a,
+.skin-blue .sidebar-menu>li.active>a {
+    border-left-color: #ff4c4c;
+}
+
+.box.box-primary {
+    border-top-color: #ff4c4c;
+}
+
+.label-primary,
+.bg-primary {
+    background-color: #ff4c4c !important;
+    border-color: #ed2020 !important;
+}
+
+.text-primary,
+.text-blue {
+    color: #ff4c4c !important;
+}
+
+.pagination>.active>a,
+.pagination>.active>a:focus,
+.pagination>.active>a:hover,
+.pagination>.active>span,
+.pagination>.active>span:focus,
+.pagination>.active>span:hover {
+    background-color: #ff4c4c;
+    border-color: #ed2020;
+}
+
+.form-control:focus {
+    border-color: #ff4c4c;
+    box-shadow: none;
+}
+
+.progress-bar-primary,
+.progress-bar-blue {
+    background-color: #ff4c4c;
 }
