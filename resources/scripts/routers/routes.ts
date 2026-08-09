@@ -1,4 +1,20 @@
 import React, { lazy } from 'react';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import {
+    faArchive,
+    faClipboardList,
+    faClock,
+    faCogs,
+    faDatabase,
+    faFolderOpen,
+    faKey,
+    faNetworkWired,
+    faPlay,
+    faTerminal,
+    faUserCircle,
+    faUserFriends,
+    faUsers,
+} from '@fortawesome/free-solid-svg-icons';
 import ServerConsole from '@/components/server/console/ServerConsoleContainer';
 import PlayersContainer from '@/components/server/players/PlayersContainer';
 import DatabasesContainer from '@/components/server/databases/DatabasesContainer';
@@ -26,8 +42,11 @@ const ScheduleEditContainer = lazy(() => import('@/components/server/schedules/S
 interface RouteDefinition {
     path: string;
     // If undefined is passed this route is still rendered into the router itself
-    // but no navigation link is displayed in the sub-navigation menu.
+    // but no navigation link is displayed in the sidebar.
     name: string | undefined;
+    // Only required for routes that surface in the sidebar; a named route without
+    // an icon renders with an empty icon slot so the labels stay aligned.
+    icon?: IconDefinition;
     component: React.ComponentType;
     exact?: boolean;
 }
@@ -51,22 +70,26 @@ export default {
         {
             path: '/',
             name: 'Account',
+            icon: faUserCircle,
             component: AccountOverviewContainer,
             exact: true,
         },
         {
             path: '/api',
             name: 'API Credentials',
+            icon: faKey,
             component: AccountApiContainer,
         },
         {
             path: '/ssh',
             name: 'SSH Keys',
+            icon: faTerminal,
             component: AccountSSHContainer,
         },
         {
             path: '/activity',
             name: 'Activity',
+            icon: faClipboardList,
             component: ActivityLogContainer,
         },
     ],
@@ -75,6 +98,7 @@ export default {
             path: '/',
             permission: null,
             name: 'Console',
+            icon: faTerminal,
             component: ServerConsole,
             exact: true,
         },
@@ -82,6 +106,7 @@ export default {
             path: '/files',
             permission: 'file.*',
             name: 'Files',
+            icon: faFolderOpen,
             component: FileManagerContainer,
         },
         {
@@ -94,12 +119,14 @@ export default {
             path: '/databases',
             permission: 'database.*',
             name: 'Databases',
+            icon: faDatabase,
             component: DatabasesContainer,
         },
         {
             path: '/schedules',
             permission: 'schedule.*',
             name: 'Schedules',
+            icon: faClock,
             component: ScheduleContainer,
         },
         {
@@ -112,42 +139,49 @@ export default {
             path: '/users',
             permission: 'user.*',
             name: 'Users',
+            icon: faUsers,
             component: UsersContainer,
         },
         {
             path: '/backups',
             permission: 'backup.*',
             name: 'Backups',
+            icon: faArchive,
             component: BackupContainer,
         },
         {
             path: '/network',
             permission: 'allocation.*',
             name: 'Network',
+            icon: faNetworkWired,
             component: NetworkContainer,
         },
         {
             path: '/startup',
             permission: 'startup.*',
             name: 'Startup',
+            icon: faPlay,
             component: StartupContainer,
         },
         {
             path: '/settings',
             permission: ['settings.*', 'file.sftp'],
             name: 'Settings',
+            icon: faCogs,
             component: SettingsContainer,
         },
         {
             path: '/activity',
             permission: 'activity.*',
             name: 'Activity',
+            icon: faClipboardList,
             component: ServerActivityLogContainer,
         },
         {
             path: '/players',
             permission: 'control.players',
             name: 'Players',
+            icon: faUserFriends,
             component: PlayersContainer,
             requiresFiveM: true,
         },
