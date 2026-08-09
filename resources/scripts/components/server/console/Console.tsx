@@ -5,6 +5,7 @@ import { SearchAddon } from 'xterm-addon-search';
 import { SearchBarAddon } from 'xterm-addon-search-bar';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import { Unicode11Addon } from 'xterm-addon-unicode11';
+import { WebglAddon } from 'xterm-addon-webgl';
 import { ScrollDownHelperAddon } from '@/plugins/XtermScrollDownHelperAddon';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import { ServerContext } from '@/state/server';
@@ -133,6 +134,17 @@ export default () => {
             terminal.loadAddon(scrollDownHelperAddon);
 
             terminal.open(ref.current);
+
+            // Render via WebGL instead of the default DOM renderer so heavy output (server
+            // boot, restarts) paints smoothly instead of thrashing the DOM. Falls back to
+            // the default renderer on unsupported browsers/GPUs or if the context is lost.
+            try {
+                const webglAddon = new WebglAddon();
+                webglAddon.onContextLoss(() => webglAddon.dispose());
+                terminal.loadAddon(webglAddon);
+            } catch {
+                // WebGL2 isn't available; the default renderer is already active.
+            }
 
             // Activate Unicode 11 for proper emoji and special character width handling
             terminal.unicode.activeVersion = '11';
