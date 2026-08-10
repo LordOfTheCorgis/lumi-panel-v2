@@ -48,7 +48,9 @@ const ArchiveFormatDialog = ({ count, onSelected, ...props }: Props) => {
             title={'Create Archive'}
             description={`Choose a format for the archive of ${count} ${count === 1 ? 'item' : 'items'}.`}
         >
-            <div className={'space-y-2'}>
+            {/* Dialog.Description has no bottom margin of its own, so without
+                this the sentence sits right on top of the ZIP option. */}
+            <div className={'mt-5 space-y-2'}>
                 {options.map((option) => {
                     const active = selected === option.value;
 
