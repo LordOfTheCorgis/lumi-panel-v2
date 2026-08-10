@@ -29,17 +29,24 @@ const danger = {
     900: '#52131e',
 };
 
+// Upstream's "neutral" scale sat at hue 209-216 with up to 24% saturation,
+// which is not a grey — it is blue, and it tinted every surface in the panel.
+// Rebuilt on hue 0 at a few percent saturation: reads as grey, but leans very
+// slightly warm so it sits under the brand red rather than fighting it.
+//
+// Lightness values are carried over verbatim from the old scale so every
+// existing contrast pairing in the UI still holds.
 const gray = {
-    50: 'hsl(216, 33%, 97%)',
-    100: 'hsl(214, 15%, 91%)',
-    200: 'hsl(210, 16%, 82%)',
-    300: 'hsl(211, 13%, 65%)',
-    400: 'hsl(211, 10%, 53%)',
-    500: 'hsl(211, 12%, 43%)',
-    600: 'hsl(209, 14%, 37%)',
-    700: 'hsl(209, 18%, 30%)',
-    800: 'hsl(209, 20%, 25%)',
-    900: 'hsl(210, 24%, 16%)',
+    50: 'hsl(0, 0%, 97%)',
+    100: 'hsl(0, 0%, 91%)',
+    200: 'hsl(0, 0%, 82%)',
+    300: 'hsl(0, 2%, 65%)',
+    400: 'hsl(0, 3%, 53%)',
+    500: 'hsl(0, 3%, 43%)',
+    600: 'hsl(0, 4%, 37%)',
+    700: 'hsl(0, 5%, 30%)',
+    800: 'hsl(0, 5%, 25%)',
+    900: 'hsl(0, 6%, 16%)',
 };
 
 module.exports = {
@@ -52,7 +59,8 @@ module.exports = {
                 header: ['"IBM Plex Sans"', '"Roboto"', 'system-ui', 'sans-serif'],
             },
             colors: {
-                black: '#131a20',
+                // Was #131a20 — a blue near-black. Same lightness, neutral hue.
+                black: '#131111',
                 // Brand color. Prefer "lumi" in new code; "primary", "blue" and "cyan"
                 // are aliases kept so upstream Pterodactyl markup picks up the brand
                 // without a rewrite.
