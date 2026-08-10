@@ -11,6 +11,7 @@ import AccountIdentity from '@/components/dashboard/AccountIdentity';
 import AccountSecuritySummary from '@/components/dashboard/AccountSecuritySummary';
 import AccountRecentActivity from '@/components/dashboard/AccountRecentActivity';
 import AccountSessions from '@/components/dashboard/AccountSessions';
+import AccountDiscord from '@/components/dashboard/AccountDiscord';
 import { useAccountDetails } from '@/api/account/getAccountDetails';
 import { useLocation } from 'react-router-dom';
 import { faEnvelope, faLock, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
@@ -47,6 +48,8 @@ export default () => {
                         <ConfigureTwoFactorForm recoveryTokens={details?.recoveryTokens} />
                     </TitledGreyBox>
                 </div>
+
+                <AccountDiscord />
 
                 <div className={'grid gap-6 lg:grid-cols-2'}>
                     <AccountSessions />

@@ -34,6 +34,9 @@ Route::prefix('/account')->middleware(AccountSubject::class)->group(function () 
         ->name('api:client.account.update-email');
     Route::put('/password', [Client\AccountController::class, 'updatePassword'])->name('api:client.account.update-password');
 
+    Route::get('/discord', [Client\DiscordController::class, 'index']);
+    Route::delete('/discord', [Client\DiscordController::class, 'delete']);
+
     Route::post('/avatar', [Client\AccountAvatarController::class, 'store'])->name('api:client.account.avatar');
     Route::delete('/avatar', [Client\AccountAvatarController::class, 'delete']);
 

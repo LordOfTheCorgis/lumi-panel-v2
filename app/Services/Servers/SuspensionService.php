@@ -5,6 +5,7 @@ namespace Pterodactyl\Services\Servers;
 use Webmozart\Assert\Assert;
 use Pterodactyl\Models\Server;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class SuspensionService
@@ -17,6 +18,7 @@ class SuspensionService
      */
     public function __construct(
         private DaemonServerRepository $daemonServerRepository,
+        private DiscordNotifier $notifier,
     ) {
     }
 
@@ -56,6 +58,14 @@ class SuspensionService
                 'status' => $isSuspending ? null : Server::STATUS_SUSPENDED,
             ]);
             throw $exception;
+        }
+
+        // Only after wings has accepted the change - telling someone their server
+        // is suspended and then rolling back would be worse than saying nothing.
+        if ($isSuspending) {
+            $this->notifier->serverSuspended($server);
+        } else {
+            $this->notifier->serverUnsuspended($server);
         }
     }
 }

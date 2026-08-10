@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
 use Pterodactyl\Services\Nodes\NodeJWTService;
 use Pterodactyl\Repositories\Wings\DaemonFileRepository;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Pterodactyl\Transformers\Api\Client\FileObjectTransformer;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Files\CopyFileRequest;
@@ -32,6 +33,7 @@ class FileController extends ClientApiController
     public function __construct(
         private NodeJWTService $jwtService,
         private DaemonFileRepository $fileRepository,
+        private DiscordNotifier $notifier,
     ) {
         parent::__construct();
     }
@@ -227,6 +229,13 @@ class FileController extends ClientApiController
             ->property('directory', $request->input('root'))
             ->property('files', $request->input('files'))
             ->log();
+
+        // Deleting a pile of files in one go is either housekeeping or someone
+        // wrecking the place. We can't tell which, so we ask.
+        $count = count($request->input('files', []));
+        if ($count >= (int) config('discord.nuke_threshold', 25)) {
+            $this->notifier->possibleNuke($server, $count, $request->input('root') ?? '/');
+        }
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

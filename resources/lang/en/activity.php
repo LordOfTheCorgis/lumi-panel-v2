@@ -30,6 +30,8 @@ return [
             'session-revoked' => 'Signed out another device',
             'avatar-updated' => 'Uploaded a new profile picture',
             'avatar-removed' => 'Removed their profile picture',
+            'discord-linked' => 'Linked Discord account :username',
+            'discord-unlinked' => 'Unlinked their Discord account',
         ],
         'api-key' => [
             'create' => 'Created new API key :identifier',

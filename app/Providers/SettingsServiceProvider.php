@@ -30,6 +30,11 @@ class SettingsServiceProvider extends ServiceProvider
         'pterodactyl:client_features:allocations:enabled',
         'pterodactyl:client_features:allocations:range_start',
         'pterodactyl:client_features:allocations:range_end',
+        'discord:enabled',
+        'discord:client_id',
+        'discord:client_secret',
+        'discord:bot_token',
+        'discord:nuke_threshold',
     ];
 
     /**
@@ -52,6 +57,8 @@ class SettingsServiceProvider extends ServiceProvider
      */
     protected static array $encrypted = [
         'mail:mailers:smtp:password',
+        'discord:client_secret',
+        'discord:bot_token',
     ];
 
     /**
