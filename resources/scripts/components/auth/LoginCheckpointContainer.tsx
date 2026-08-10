@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, RouteComponentProps } from 'react-router-dom';
 import loginCheckpoint from '@/api/auth/loginCheckpoint';
-import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import LoginFormContainer, { AuthLinkStyle } from '@/components/auth/LoginFormContainer';
 import { ActionCreator } from 'easy-peasy';
 import { StaticContext } from 'react-router';
 import { useFormikContext, withFormik } from 'formik';
@@ -27,10 +27,9 @@ const LoginCheckpointContainer = () => {
     const [isMissingDevice, setIsMissingDevice] = useState(false);
 
     return (
-        <LoginFormContainer title={'Device Checkpoint'} css={tw`w-full flex`}>
+        <LoginFormContainer title={'Device Checkpoint'}>
             <div css={tw`mt-6`}>
                 <Field
-                    light
                     name={isMissingDevice ? 'recoveryCode' : 'code'}
                     title={isMissingDevice ? 'Recovery Code' : 'Authentication Code'}
                     description={
@@ -55,16 +54,13 @@ const LoginCheckpointContainer = () => {
                         setFieldValue('recoveryCode', '');
                         setIsMissingDevice((s) => !s);
                     }}
-                    css={tw`cursor-pointer text-xs text-neutral-500 tracking-wide uppercase no-underline hover:text-neutral-700`}
+                    className={AuthLinkStyle}
                 >
                     {!isMissingDevice ? "I've Lost My Device" : 'I Have My Device'}
                 </span>
             </div>
             <div css={tw`mt-6 text-center`}>
-                <Link
-                    to={'/auth/login'}
-                    css={tw`text-xs text-neutral-500 tracking-wide uppercase no-underline hover:text-neutral-700`}
-                >
+                <Link to={'/auth/login'} className={AuthLinkStyle}>
                     Return to Login
                 </Link>
             </div>

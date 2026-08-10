@@ -3,13 +3,14 @@ import { RouteComponentProps } from 'react-router';
 import { Link } from 'react-router-dom';
 import performPasswordReset from '@/api/auth/performPasswordReset';
 import { httpErrorToHuman } from '@/api/http';
-import LoginFormContainer from '@/components/auth/LoginFormContainer';
+import LoginFormContainer, { AuthLinkStyle } from '@/components/auth/LoginFormContainer';
 import { Actions, useStoreActions } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import { Formik, FormikHelpers } from 'formik';
 import { object, ref, string } from 'yup';
 import Field from '@/components/elements/Field';
 import Input from '@/components/elements/Input';
+import Label from '@/components/elements/Label';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
 
@@ -61,14 +62,13 @@ export default ({ match, location }: RouteComponentProps<{ token: string }>) => 
             })}
         >
             {({ isSubmitting }) => (
-                <LoginFormContainer title={'Reset Password'} css={tw`w-full flex`}>
+                <LoginFormContainer title={'Reset Password'}>
                     <div>
-                        <label>Email</label>
-                        <Input value={email} isLight disabled />
+                        <Label>Email</Label>
+                        <Input value={email} disabled />
                     </div>
                     <div css={tw`mt-6`}>
                         <Field
-                            light
                             label={'New Password'}
                             name={'password'}
                             type={'password'}
@@ -76,7 +76,7 @@ export default ({ match, location }: RouteComponentProps<{ token: string }>) => 
                         />
                     </div>
                     <div css={tw`mt-6`}>
-                        <Field light label={'Confirm New Password'} name={'passwordConfirmation'} type={'password'} />
+                        <Field label={'Confirm New Password'} name={'passwordConfirmation'} type={'password'} />
                     </div>
                     <div css={tw`mt-6`}>
                         <Button size={'xlarge'} type={'submit'} disabled={isSubmitting} isLoading={isSubmitting}>
@@ -84,10 +84,7 @@ export default ({ match, location }: RouteComponentProps<{ token: string }>) => 
                         </Button>
                     </div>
                     <div css={tw`mt-6 text-center`}>
-                        <Link
-                            to={'/auth/login'}
-                            css={tw`text-xs text-neutral-500 tracking-wide no-underline uppercase hover:text-neutral-600`}
-                        >
+                        <Link to={'/auth/login'} className={AuthLinkStyle}>
                             Return to Login
                         </Link>
                     </div>
