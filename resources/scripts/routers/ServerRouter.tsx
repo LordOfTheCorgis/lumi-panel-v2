@@ -2,6 +2,7 @@ import TransferListener from '@/components/server/TransferListener';
 import React, { useEffect, useState } from 'react';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import TransitionRouter from '@/TransitionRouter';
 import WebsocketHandler from '@/components/server/WebsocketHandler';
 import { ServerContext } from '@/state/server';
@@ -100,6 +101,7 @@ export default () => {
                     </Sidebar.Section>
                 )}
             </Sidebar>
+            <AnnouncementBar />
             {!uuid || !id ? (
                 error ? (
                     <ServerError message={error} />

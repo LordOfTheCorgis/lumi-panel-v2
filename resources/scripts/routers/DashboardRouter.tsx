@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { NotFound } from '@/components/elements/ScreenBlock';
 import TransitionRouter from '@/TransitionRouter';
@@ -29,6 +30,7 @@ export default () => {
                         ))}
                 </Sidebar.Section>
             </Sidebar>
+            <AnnouncementBar />
             <TransitionRouter>
                 <React.Suspense fallback={<Spinner centered />}>
                     <Switch location={location}>

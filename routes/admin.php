@@ -8,6 +8,25 @@ Route::get('/', [Admin\BaseController::class, 'index'])->name('admin.index');
 
 /*
 |--------------------------------------------------------------------------
+| Announcement Controller Routes
+|--------------------------------------------------------------------------
+|
+| Endpoint: /admin/announcements
+|
+*/
+Route::group(['prefix' => 'announcements'], function () {
+    Route::get('/', [Admin\AnnouncementController::class, 'index'])->name('admin.announcements');
+    Route::get('/new', [Admin\AnnouncementController::class, 'create'])->name('admin.announcements.new');
+    Route::get('/view/{announcement:id}', [Admin\AnnouncementController::class, 'view'])->name('admin.announcements.view');
+
+    Route::post('/new', [Admin\AnnouncementController::class, 'store']);
+
+    Route::patch('/view/{announcement:id}', [Admin\AnnouncementController::class, 'update']);
+    Route::delete('/view/{announcement:id}', [Admin\AnnouncementController::class, 'delete'])->name('admin.announcements.delete');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Location Controller Routes
 |--------------------------------------------------------------------------
 |
