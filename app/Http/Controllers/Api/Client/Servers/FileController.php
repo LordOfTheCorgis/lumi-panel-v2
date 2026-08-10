@@ -148,6 +148,7 @@ class FileController extends ClientApiController
         Activity::event('server:file.rename')
             ->property('directory', $request->input('root'))
             ->property('files', $request->input('files'))
+            ->property('format', $request->input('format') ?? 'tar_gz')
             ->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
@@ -176,7 +177,8 @@ class FileController extends ClientApiController
     {
         $file = $this->fileRepository->setServer($server)->compressFiles(
             $request->input('root'),
-            $request->input('files')
+            $request->input('files'),
+            $request->input('format')
         );
 
         Activity::event('server:file.compress')

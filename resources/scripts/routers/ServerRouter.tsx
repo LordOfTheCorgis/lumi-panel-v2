@@ -1,5 +1,5 @@
 import TransferListener from '@/components/server/TransferListener';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import AnnouncementBar from '@/components/AnnouncementBar';
@@ -51,6 +51,23 @@ export default () => {
         []
     );
 
+    // Bucket the sidebar routes by their group, preserving the order the groups
+    // first appear in the route table so the sidebar order is controlled there
+    // rather than here.
+    const groupedRoutes = useMemo(() => {
+        const groups = new Map<string, typeof routes.server>();
+
+        routes.server
+            .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
+            .forEach((route) => {
+                const key = route.group || 'Server';
+
+                groups.set(key, [...(groups.get(key) || []), route]);
+            });
+
+        return Array.from(groups.entries());
+    }, [isFiveM]);
+
     useEffect(() => {
         setError('');
 
@@ -68,37 +85,55 @@ export default () => {
         <div className={'md:pl-64'} key={'server-router'}>
             <Sidebar>
                 {!!uuid && !!id && (
-                    <Sidebar.Section label={serverName || 'Server'}>
-                        {routes.server
-                            .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
-                            .map((route) =>
-                                route.permission ? (
-                                    <Can key={route.path} action={route.permission} matchAny>
-                                        <Sidebar.Link to={to(route.path, true)} icon={route.icon} exact={route.exact}>
+                    <>
+                        {/* Which server you are inside. The groups below are
+                            generic headings, so without this the sidebar gives
+                            no clue which machine you are looking at. */}
+                        <div className={'mx-3 mt-2 mb-1 rounded-md bg-neutral-800 px-3 py-2'}>
+                            <p className={'text-2xs font-semibold uppercase tracking-widest text-neutral-500'}>
+                                Managing
+                            </p>
+                            <p className={'truncate text-sm font-medium text-neutral-100'}>{serverName}</p>
+                        </div>
+
+                        {groupedRoutes.map(([group, groupRoutes]) => (
+                            <Sidebar.Section key={group} label={group}>
+                                {groupRoutes.map((route) =>
+                                    route.permission ? (
+                                        <Can key={route.path} action={route.permission} matchAny>
+                                            <Sidebar.Link
+                                                to={to(route.path, true)}
+                                                icon={route.icon}
+                                                exact={route.exact}
+                                            >
+                                                {route.name}
+                                            </Sidebar.Link>
+                                        </Can>
+                                    ) : (
+                                        <Sidebar.Link
+                                            key={route.path}
+                                            to={to(route.path, true)}
+                                            icon={route.icon}
+                                            exact={route.exact}
+                                        >
                                             {route.name}
                                         </Sidebar.Link>
-                                    </Can>
-                                ) : (
-                                    <Sidebar.Link
-                                        key={route.path}
-                                        to={to(route.path, true)}
-                                        icon={route.icon}
-                                        exact={route.exact}
-                                    >
-                                        {route.name}
-                                    </Sidebar.Link>
-                                )
-                            )}
+                                    )
+                                )}
+                            </Sidebar.Section>
+                        ))}
                         {rootAdmin && (
-                            <Sidebar.ExternalLink
-                                href={`/admin/servers/view/${serverId}`}
-                                icon={faExternalLinkAlt}
-                                newTab
-                            >
-                                Manage Server
-                            </Sidebar.ExternalLink>
+                            <Sidebar.Section label={'Administration'}>
+                                <Sidebar.ExternalLink
+                                    href={`/admin/servers/view/${serverId}`}
+                                    icon={faExternalLinkAlt}
+                                    newTab
+                                >
+                                    Manage Server
+                                </Sidebar.ExternalLink>
+                            </Sidebar.Section>
                         )}
-                    </Sidebar.Section>
+                    </>
                 )}
             </Sidebar>
             <AnnouncementBar />

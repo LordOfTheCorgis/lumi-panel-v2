@@ -53,6 +53,9 @@ interface RouteDefinition {
 
 interface ServerRouteDefinition extends RouteDefinition {
     permission: string | string[] | null;
+    // Sidebar grouping. Routes render under this heading, in the order the
+    // groups first appear in this file.
+    group?: string;
     // Restricts this route to servers whose egg exposes the TXADMIN_PORT variable, the
     // same heuristic used to identify FiveM-capable eggs elsewhere in the panel.
     requiresFiveM?: boolean;
@@ -98,6 +101,7 @@ export default {
             path: '/',
             permission: null,
             name: 'Console',
+            group: 'Server',
             icon: faTerminal,
             component: ServerConsole,
             exact: true,
@@ -106,6 +110,7 @@ export default {
             path: '/files',
             permission: 'file.*',
             name: 'Files',
+            group: 'Management',
             icon: faFolderOpen,
             component: FileManagerContainer,
         },
@@ -119,6 +124,7 @@ export default {
             path: '/databases',
             permission: 'database.*',
             name: 'Databases',
+            group: 'Management',
             icon: faDatabase,
             component: DatabasesContainer,
         },
@@ -126,6 +132,7 @@ export default {
             path: '/schedules',
             permission: 'schedule.*',
             name: 'Schedules',
+            group: 'Management',
             icon: faClock,
             component: ScheduleContainer,
         },
@@ -139,6 +146,7 @@ export default {
             path: '/users',
             permission: 'user.*',
             name: 'Users',
+            group: 'Access',
             icon: faUsers,
             component: UsersContainer,
         },
@@ -146,6 +154,7 @@ export default {
             path: '/backups',
             permission: 'backup.*',
             name: 'Backups',
+            group: 'Management',
             icon: faArchive,
             component: BackupContainer,
         },
@@ -153,6 +162,7 @@ export default {
             path: '/network',
             permission: 'allocation.*',
             name: 'Network',
+            group: 'Configuration',
             icon: faNetworkWired,
             component: NetworkContainer,
         },
@@ -160,6 +170,7 @@ export default {
             path: '/startup',
             permission: 'startup.*',
             name: 'Startup',
+            group: 'Configuration',
             icon: faPlay,
             component: StartupContainer,
         },
@@ -167,6 +178,7 @@ export default {
             path: '/settings',
             permission: ['settings.*', 'file.sftp'],
             name: 'Settings',
+            group: 'Configuration',
             icon: faCogs,
             component: SettingsContainer,
         },
@@ -174,6 +186,7 @@ export default {
             path: '/activity',
             permission: 'activity.*',
             name: 'Activity',
+            group: 'Access',
             icon: faClipboardList,
             component: ServerActivityLogContainer,
         },
@@ -181,6 +194,7 @@ export default {
             path: '/players',
             permission: 'control.players',
             name: 'Players',
+            group: 'Server',
             icon: faUserFriends,
             component: PlayersContainer,
             requiresFiveM: true,

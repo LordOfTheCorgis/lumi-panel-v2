@@ -3,15 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useLocation } from 'react-router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import {
-    faBars,
-    faCogs,
-    faCreditCard,
-    faHeartbeat,
-    faLayerGroup,
-    faSignOutAlt,
-    faTimes,
-} from '@fortawesome/free-solid-svg-icons';
+import { faBars, faCogs, faLayerGroup, faSignOutAlt, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import SearchContainer from '@/components/dashboard/search/SearchContainer';
@@ -198,17 +190,6 @@ const Sidebar = ({ children }: Props) => {
                     </SidebarSection>
 
                     {children}
-
-                    {/* Links off the panel entirely, kept in their own labelled
-                        group so nobody mistakes them for another panel page. */}
-                    <SidebarSection label={'Lumix Solutions'}>
-                        <SidebarExternalLink href={'https://billing.lumixsolutions.org/'} icon={faCreditCard} newTab>
-                            Billing
-                        </SidebarExternalLink>
-                        <SidebarExternalLink href={'https://status.lumixsolutions.org'} icon={faHeartbeat} newTab>
-                            Status
-                        </SidebarExternalLink>
-                    </SidebarSection>
 
                     {/* Only rendered for root admins. */}
                     {rootAdmin && (

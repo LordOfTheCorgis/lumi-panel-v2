@@ -2,10 +2,19 @@ import { FileObject } from '@/api/server/files/loadDirectory';
 import http from '@/api/http';
 import { rawDataToFileObject } from '@/api/transformers';
 
-export default async (uuid: string, directory: string, files: string[]): Promise<FileObject> => {
+export type ArchiveFormat = 'zip' | 'tar_gz';
+
+export default async (
+    uuid: string,
+    directory: string,
+    files: string[],
+    format?: ArchiveFormat
+): Promise<FileObject> => {
     const { data } = await http.post(
         `/api/client/servers/${uuid}/files/compress`,
-        { root: directory, files },
+        // Omitted rather than defaulted, so a daemon that predates format
+        // support receives exactly the payload it always did.
+        { root: directory, files, ...(format ? { format } : {}) },
         {
             timeout: 60000,
             timeoutErrorMessage:

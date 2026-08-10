@@ -5,7 +5,8 @@ import Fade from '@/components/elements/Fade';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import useFileManagerSwr from '@/plugins/useFileManagerSwr';
 import useFlash from '@/plugins/useFlash';
-import compressFiles from '@/api/server/files/compressFiles';
+import compressFiles, { ArchiveFormat } from '@/api/server/files/compressFiles';
+import ArchiveFormatDialog from '@/components/server/files/ArchiveFormatDialog';
 import { ServerContext } from '@/state/server';
 import deleteFiles from '@/api/server/files/deleteFiles';
 import RenameFileModal from '@/components/server/files/RenameFileModal';
@@ -21,6 +22,7 @@ const MassActionsBar = () => {
     const [loadingMessage, setLoadingMessage] = useState('');
     const [showConfirm, setShowConfirm] = useState(false);
     const [showMove, setShowMove] = useState(false);
+    const [showArchive, setShowArchive] = useState(false);
     const directory = ServerContext.useStoreState((state) => state.files.directory);
 
     const selectedFiles = ServerContext.useStoreState((state) => state.files.selectedFiles);
@@ -30,12 +32,13 @@ const MassActionsBar = () => {
         if (!loading) setLoadingMessage('');
     }, [loading]);
 
-    const onClickCompress = () => {
+    const onArchiveFormatSelected = (format: ArchiveFormat) => {
+        setShowArchive(false);
         setLoading(true);
         clearFlashes('files');
         setLoadingMessage('Archiving files...');
 
-        compressFiles(uuid, directory, selectedFiles)
+        compressFiles(uuid, directory, selectedFiles, format)
             .then(() => mutate())
             .then(() => setSelectedFiles([]))
             .catch((error) => clearAndAddHttpError({ key: 'files', error }))
@@ -83,6 +86,12 @@ const MassActionsBar = () => {
                     ))}
                     {selectedFiles.length > 15 && <li>and {selectedFiles.length - 15} others</li>}
                 </Dialog.Confirm>
+                <ArchiveFormatDialog
+                    open={showArchive}
+                    count={selectedFiles.length}
+                    onClose={() => setShowArchive(false)}
+                    onSelected={onArchiveFormatSelected}
+                />
                 {showMove && (
                     <RenameFileModal
                         files={selectedFiles}
@@ -97,7 +106,7 @@ const MassActionsBar = () => {
                         <Fade timeout={75} in={selectedFiles.length > 0} unmountOnExit>
                             <div css={tw`flex items-center space-x-4 pointer-events-auto rounded p-4 bg-black/50`}>
                                 <Button onClick={() => setShowMove(true)}>Move</Button>
-                                <Button onClick={onClickCompress}>Archive</Button>
+                                <Button onClick={() => setShowArchive(true)}>Archive</Button>
                                 <Button.Danger variant={Button.Variants.Secondary} onClick={() => setShowConfirm(true)}>
                                     Delete
                                 </Button.Danger>

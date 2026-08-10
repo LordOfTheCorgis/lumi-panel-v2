@@ -27,7 +27,8 @@ import useFileManagerSwr from '@/plugins/useFileManagerSwr';
 import DropdownMenu from '@/components/elements/DropdownMenu';
 import styled from 'styled-components/macro';
 import useEventListener from '@/plugins/useEventListener';
-import compressFiles from '@/api/server/files/compressFiles';
+import compressFiles, { ArchiveFormat } from '@/api/server/files/compressFiles';
+import ArchiveFormatDialog from '@/components/server/files/ArchiveFormatDialog';
 import decompressFiles from '@/api/server/files/decompressFiles';
 import isEqual from 'react-fast-compare';
 import ChmodFileModal from '@/components/server/files/ChmodFileModal';
@@ -59,6 +60,7 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
     const [showSpinner, setShowSpinner] = useState(false);
     const [modal, setModal] = useState<ModalType | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [showArchive, setShowArchive] = useState(false);
 
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const { mutate } = useFileManagerSwr();
@@ -107,11 +109,12 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
             .then(() => setShowSpinner(false));
     };
 
-    const doArchive = () => {
+    const doArchive = (format: ArchiveFormat) => {
+        setShowArchive(false);
         setShowSpinner(true);
         clearFlashes('files');
 
-        compressFiles(uuid, directory, [file.name])
+        compressFiles(uuid, directory, [file.name], format)
             .then(() => mutate())
             .catch((error) => clearAndAddHttpError({ key: 'files', error }))
             .then(() => setShowSpinner(false));
@@ -129,6 +132,12 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
 
     return (
         <>
+            <ArchiveFormatDialog
+                open={showArchive}
+                count={1}
+                onClose={() => setShowArchive(false)}
+                onSelected={doArchive}
+            />
             <Dialog.Confirm
                 open={showConfirmation}
                 onClose={() => setShowConfirmation(false)}
@@ -182,7 +191,7 @@ const FileDropdownMenu = ({ file }: { file: FileObject }) => {
                     </Can>
                 ) : (
                     <Can action={'file.archive'}>
-                        <Row onClick={doArchive} icon={faFileArchive} title={'Archive'} />
+                        <Row onClick={() => setShowArchive(true)} icon={faFileArchive} title={'Archive'} />
                     </Can>
                 )}
                 {file.isFile && <Row onClick={doDownload} icon={faFileDownload} title={'Download'} />}

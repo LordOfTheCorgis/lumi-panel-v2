@@ -21,6 +21,9 @@ class CompressFilesRequest extends ClientApiRequest
             'root' => 'sometimes|nullable|string',
             'files' => 'required|array',
             'files.*' => 'string',
+            // Optional; Wings falls back to tar.gz when this is absent, which
+            // is what every pre-existing client sends.
+            'format' => 'sometimes|nullable|string|in:zip,tar_gz',
         ];
     }
 }
