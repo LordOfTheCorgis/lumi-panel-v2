@@ -27,23 +27,24 @@ const IconDescription = styled.p<{ $alarm: boolean }>`
     ${(props) => (props.$alarm ? tw`text-white` : tw`text-neutral-400`)};
 `;
 
+const statusColor = ($status: ServerPowerState | undefined) =>
+    !$status || $status === 'offline' ? tw`bg-red-500` : $status === 'running' ? tw`bg-green-500` : tw`bg-yellow-500`;
+
 const StatusIndicatorBox = styled(GreyRowBox)<{ $status: ServerPowerState | undefined }>`
     ${tw`grid grid-cols-12 gap-4 relative`};
 
+    /* Accent down the leading edge, flush with the card rather than floating
+       inside it as the old right-hand pill did. */
     & .status-bar {
-        ${tw`w-2 bg-red-500 absolute right-0 z-20 rounded-full m-1 opacity-50 transition-all duration-150`};
-        height: calc(100% - 0.5rem);
-
-        ${({ $status }) =>
-            !$status || $status === 'offline'
-                ? tw`bg-red-500`
-                : $status === 'running'
-                ? tw`bg-green-500`
-                : tw`bg-yellow-500`};
+        ${tw`absolute left-0 inset-y-0 w-1 transition-all duration-150`};
+        ${({ $status }) => statusColor($status)};
     }
 
-    &:hover .status-bar {
-        ${tw`opacity-75`};
+    & .status-dot {
+        /* "flex-shrink-0" rather than Tailwind 3's "shrink-0": twin.macro 2.8
+           predates the rename and only resolves the long form. */
+        ${tw`h-2 w-2 flex-shrink-0 rounded-full`};
+        ${({ $status }) => statusColor($status)};
     }
 `;
 
@@ -94,10 +95,13 @@ export default ({ server, className }: { server: Server; className?: string }) =
                 <div className={'icon mr-4'}>
                     <FontAwesomeIcon icon={faServer} />
                 </div>
-                <div>
-                    <p css={tw`text-lg break-words`}>{server.name}</p>
+                <div css={tw`min-w-0`}>
+                    <div css={tw`flex items-center gap-2`}>
+                        <span className={'status-dot'} />
+                        <p css={tw`text-base font-medium text-neutral-100 break-words`}>{server.name}</p>
+                    </div>
                     {!!server.description && (
-                        <p css={tw`text-sm text-neutral-300 break-words line-clamp-2`}>{server.description}</p>
+                        <p css={tw`mt-0.5 text-sm text-neutral-400 break-words line-clamp-2`}>{server.description}</p>
                     )}
                 </div>
             </div>

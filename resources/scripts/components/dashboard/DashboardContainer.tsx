@@ -12,6 +12,9 @@ import tw from 'twin.macro';
 import useSWR from 'swr';
 import { PaginatedResult } from '@/api/http';
 import Pagination from '@/components/elements/Pagination';
+import PageHeader from '@/components/elements/PageHeader';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faServer } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 
 export default () => {
@@ -54,33 +57,47 @@ export default () => {
 
     return (
         <PageContentBlock title={'Dashboard'} showFlashKey={'dashboard'}>
-            {rootAdmin && (
-                <div css={tw`mb-2 flex justify-end items-center`}>
-                    <p css={tw`uppercase text-xs text-neutral-400 mr-2`}>
-                        {showOnlyAdmin ? "Showing others' servers" : 'Showing your servers'}
-                    </p>
-                    <Switch
-                        name={'show_all_servers'}
-                        defaultChecked={showOnlyAdmin}
-                        onChange={() => setShowOnlyAdmin((s) => !s)}
-                    />
-                </div>
-            )}
+            <PageHeader
+                title={showOnlyAdmin ? 'All Servers' : 'Your Servers'}
+                description={
+                    servers
+                        ? `${servers.pagination.total} server${servers.pagination.total === 1 ? '' : 's'} available`
+                        : 'Loading servers…'
+                }
+            >
+                {rootAdmin && (
+                    <label css={tw`flex items-center gap-3 cursor-pointer select-none`}>
+                        <span css={tw`text-sm text-neutral-400`}>Show all servers</span>
+                        <Switch
+                            name={'show_all_servers'}
+                            defaultChecked={showOnlyAdmin}
+                            onChange={() => setShowOnlyAdmin((s) => !s)}
+                        />
+                    </label>
+                )}
+            </PageHeader>
             {!servers ? (
                 <Spinner centered size={'large'} />
             ) : (
                 <Pagination data={servers} onPageSelect={setPage}>
                     {({ items }) =>
                         items.length > 0 ? (
-                            items.map((server, index) => (
-                                <ServerRow key={server.uuid} server={server} css={index > 0 ? tw`mt-2` : undefined} />
-                            ))
+                            <div css={tw`space-y-3`}>
+                                {items.map((server) => (
+                                    <ServerRow key={server.uuid} server={server} />
+                                ))}
+                            </div>
                         ) : (
-                            <p css={tw`text-center text-sm text-neutral-400`}>
-                                {showOnlyAdmin
-                                    ? 'There are no other servers to display.'
-                                    : 'There are no servers associated with your account.'}
-                            </p>
+                            <div
+                                css={tw`rounded-lg border border-dashed border-neutral-700 px-6 py-16 text-center bg-neutral-800 bg-opacity-40`}
+                            >
+                                <FontAwesomeIcon icon={faServer} css={tw`text-3xl text-neutral-600`} />
+                                <p css={tw`mt-4 text-sm text-neutral-400`}>
+                                    {showOnlyAdmin
+                                        ? 'There are no other servers to display.'
+                                        : 'There are no servers associated with your account.'}
+                                </p>
+                            </div>
                         )
                     }
                 </Pagination>

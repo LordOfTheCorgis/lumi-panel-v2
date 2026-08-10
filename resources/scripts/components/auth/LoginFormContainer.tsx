@@ -81,11 +81,15 @@ const Card = styled.div`
     }
 `;
 
-// Sits on top of the border band, leaving only the 1px ring exposed.
+/**
+ * Sits on top of the border band, leaving only the 1px ring exposed. This must
+ * stay fully opaque: any transparency lets the rotating gradient behind it show
+ * through the middle of the card as a sweeping wedge.
+ */
 const Surface = styled.div`
-    ${tw`relative rounded-2xl bg-neutral-900 bg-opacity-80 p-6 sm:p-8`};
+    ${tw`relative rounded-2xl p-6 sm:p-8`};
     z-index: 1;
-    backdrop-filter: blur(12px);
+    background-color: #131313;
 `;
 
 // Staggers the card's contents in behind the card itself.
