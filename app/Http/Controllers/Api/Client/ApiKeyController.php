@@ -5,6 +5,7 @@ namespace Pterodactyl\Http\Controllers\Api\Client;
 use Pterodactyl\Models\ApiKey;
 use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Illuminate\Support\Facades\DB;
 use Pterodactyl\Exceptions\DisplayException;
 use Pterodactyl\Http\Requests\Api\Client\ClientApiRequest;
@@ -13,6 +14,11 @@ use Pterodactyl\Http\Requests\Api\Client\Account\StoreApiKeyRequest;
 
 class ApiKeyController extends ClientApiController
 {
+    public function __construct(private DiscordNotifier $notifier)
+    {
+        parent::__construct();
+    }
+
     /**
      * Returns all the API keys that exist for the given client.
      */
@@ -45,6 +51,8 @@ class ApiKeyController extends ClientApiController
             ->subject($token->accessToken)
             ->property('identifier', $token->accessToken->identifier)
             ->log();
+
+        $this->notifier->apiKeyCreated($request->user(), $token->accessToken->identifier);
 
         return $this->fractal->item($token->accessToken)
             ->transformWith($this->getTransformer(ApiKeyTransformer::class))

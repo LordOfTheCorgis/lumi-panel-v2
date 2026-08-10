@@ -6,11 +6,12 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
 use Pterodactyl\Services\Discord\DiscordService;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Pterodactyl\Http\Requests\Api\Client\ClientApiRequest;
 
 class DiscordController extends ClientApiController
 {
-    public function __construct(private DiscordService $discord)
+    public function __construct(private DiscordService $discord, private DiscordNotifier $notifier)
     {
         parent::__construct();
     }
@@ -35,6 +36,9 @@ class DiscordController extends ClientApiController
         $user = $request->user();
 
         if (!empty($user->discord_id)) {
+            // Has to go out before the ID is cleared or there's no recipient.
+            $this->notifier->unlinked($user);
+
             $user->forceFill([
                 'discord_id' => null,
                 'discord_username' => null,

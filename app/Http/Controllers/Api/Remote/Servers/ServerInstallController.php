@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Pterodactyl\Models\Server;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Illuminate\Http\JsonResponse;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Exceptions\Http\HttpForbiddenException;
@@ -19,7 +20,11 @@ class ServerInstallController extends Controller
     /**
      * ServerInstallController constructor.
      */
-    public function __construct(private ServerRepository $repository, private EventDispatcher $eventDispatcher)
+    public function __construct(
+        private ServerRepository $repository,
+        private EventDispatcher $eventDispatcher,
+        private DiscordNotifier $notifier,
+    )
     {
     }
 
@@ -83,6 +88,8 @@ class ServerInstallController extends Controller
         } elseif (!$isInitialInstall && config()->get('pterodactyl.email.send_reinstall_notification', true)) {
             $this->eventDispatcher->dispatch(new ServerInstalled($server));
         }
+
+        $this->notifier->serverInstalled($server, $request->boolean('successful'), !$isInitialInstall);
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

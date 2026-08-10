@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Pterodactyl\Services\Users\TwoFactorSetupService;
 use Pterodactyl\Services\Users\ToggleTwoFactorService;
 use Illuminate\Contracts\Validation\Factory as ValidationFactory;
@@ -21,6 +22,7 @@ class TwoFactorController extends ClientApiController
         private ToggleTwoFactorService $toggleTwoFactorService,
         private TwoFactorSetupService $setupService,
         private ValidationFactory $validation,
+        private DiscordNotifier $notifier,
     ) {
         parent::__construct();
     }
@@ -95,6 +97,8 @@ class TwoFactorController extends ClientApiController
         ]);
 
         Activity::event('user:two-factor.delete')->log();
+
+        $this->notifier->twoFactorDisabled($user);
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

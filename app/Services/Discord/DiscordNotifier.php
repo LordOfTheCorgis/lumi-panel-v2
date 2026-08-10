@@ -92,4 +92,130 @@ class DiscordNotifier
             ],
         ]);
     }
+
+    /* ---------------------------------------------------------------------
+     * Security events.
+     *
+     * These all follow the same shape on purpose: state what changed, then
+     * tell them what to do if it wasn't them. A security alert that doesn't
+     * say what to do next is just anxiety.
+     * ------------------------------------------------------------------- */
+
+    public function passwordChanged(User $user): void
+    {
+        $this->security($user, 'Password Changed', 'The password on your panel account was just changed.');
+    }
+
+    public function emailChanged(User $user, string $old, string $new): void
+    {
+        $this->discord->notify($user, [
+            'title' => 'Email Address Changed',
+            'description' => 'The email address on your panel account was just changed.',
+            'fields' => [
+                ['name' => 'From', 'value' => '`' . $old . '`', 'inline' => true],
+                ['name' => 'To', 'value' => '`' . $new . '`', 'inline' => true],
+                ['name' => 'Was this you?', 'value' => self::RECOVERY_ADVICE],
+            ],
+        ]);
+    }
+
+    public function twoFactorDisabled(User $user): void
+    {
+        $this->security(
+            $user,
+            'Two-Step Verification Disabled',
+            'Two-step verification was just turned off on your account. Your password is now the only thing protecting it.'
+        );
+    }
+
+    public function apiKeyCreated(User $user, string $identifier): void
+    {
+        $this->security(
+            $user,
+            'API Key Created',
+            sprintf('A new API key (`%s`) was created on your account. API keys can control your servers.', $identifier)
+        );
+    }
+
+    /**
+     * Sent while the link still exists - once discord_id is cleared we have
+     * nowhere to send it, so the caller has to fire this before unlinking.
+     */
+    public function unlinked(User $user): void
+    {
+        $this->discord->notify($user, [
+            'title' => 'Discord Account Unlinked',
+            'description' => 'This Discord account is no longer linked to your panel account. This is the last message you will get here.',
+            'fields' => [
+                ['name' => 'Was this you?', 'value' => self::RECOVERY_ADVICE],
+            ],
+        ]);
+    }
+
+    /* ---------------------------------------------------------------------
+     * Server lifecycle.
+     * ------------------------------------------------------------------- */
+
+    public function serverInstalled(Server $server, bool $successful, bool $reinstall): void
+    {
+        $verb = $reinstall ? 'Reinstall' : 'Install';
+
+        $this->discord->notify($server->user, $successful ? [
+            'title' => $verb . ' Complete',
+            'description' => sprintf('**%s** has finished installing and is ready to start.', $server->name),
+        ] : [
+            'title' => $verb . ' Failed',
+            'description' => sprintf(
+                '**%s** failed to install. Check the install log on the panel, or open a ticket if it keeps happening.',
+                $server->name
+            ),
+        ]);
+    }
+
+    public function backupFinished(Server $server, string $name, bool $successful): void
+    {
+        $this->discord->notify($server->user, $successful ? [
+            'title' => 'Backup Complete',
+            'description' => sprintf('Backup `%s` finished on **%s**.', $name, $server->name),
+        ] : [
+            'title' => 'Backup Failed',
+            'description' => sprintf(
+                'Backup `%s` failed on **%s**. Nothing was saved - do not rely on this one.',
+                $name,
+                $server->name
+            ),
+        ]);
+    }
+
+    /**
+     * Sent to the server owner, not the person being added. Someone gaining
+     * access to your server is your business.
+     */
+    public function subuserAdded(Server $server, string $email): void
+    {
+        $this->discord->notify($server->user, [
+            'title' => 'User Added To Your Server',
+            'description' => sprintf('`%s` was given access to **%s**.', $email, $server->name),
+            'fields' => [
+                [
+                    'name' => 'Was this you?',
+                    'value' => 'If not, remove them from the Users page on that server and change your password.',
+                ],
+            ],
+        ]);
+    }
+
+    private const RECOVERY_ADVICE = "If this wasn't you, change your password immediately, "
+        . 'turn on two-step verification, and review your API keys on the panel.';
+
+    private function security(User $user, string $title, string $description): void
+    {
+        $this->discord->notify($user, [
+            'title' => $title,
+            'description' => $description,
+            'fields' => [
+                ['name' => 'Was this you?', 'value' => self::RECOVERY_ADVICE],
+            ],
+        ]);
+    }
 }

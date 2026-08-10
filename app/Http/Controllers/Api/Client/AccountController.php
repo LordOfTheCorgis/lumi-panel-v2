@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
 use Illuminate\Support\Facades\RateLimiter;
 use Pterodactyl\Services\Users\UserUpdateService;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Pterodactyl\Transformers\Api\Client\AccountTransformer;
 use Pterodactyl\Http\Requests\Api\Client\Account\UpdateEmailRequest;
 use Pterodactyl\Http\Requests\Api\Client\Account\UpdatePasswordRequest;
@@ -24,7 +25,11 @@ class AccountController extends ClientApiController
     /**
      * AccountController constructor.
      */
-    public function __construct(private AuthManager $manager, private UserUpdateService $updateService)
+    public function __construct(
+        private AuthManager $manager,
+        private UserUpdateService $updateService,
+        private DiscordNotifier $notifier,
+    )
     {
         parent::__construct();
     }
@@ -58,6 +63,8 @@ class AccountController extends ClientApiController
             Activity::event('user:account.email-changed')
                 ->property(['old' => $original, 'new' => $request->validated('email')])
                 ->log();
+
+            $this->notifier->emailChanged($user->refresh(), $original, $request->validated('email'));
         }
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
@@ -79,6 +86,8 @@ class AccountController extends ClientApiController
         // someone's password from the admin panel doesn't move the date; this is
         // "when did *you* last change it".
         $user->forceFill(['password_changed_at' => now()])->saveOrFail();
+
+        $this->notifier->passwordChanged($user);
 
         $guard = $this->manager->guard();
         // If you do not update the user in the session you'll end up working with a

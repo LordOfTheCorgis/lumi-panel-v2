@@ -5,6 +5,7 @@ namespace Pterodactyl\Services\Subusers;
 use Illuminate\Support\Str;
 use Pterodactyl\Models\Server;
 use Pterodactyl\Models\Subuser;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Services\Users\UserCreationService;
 use Pterodactyl\Repositories\Eloquent\SubuserRepository;
@@ -23,6 +24,7 @@ class SubuserCreationService
         private SubuserRepository $subuserRepository,
         private UserCreationService $userCreationService,
         private UserRepositoryInterface $userRepository,
+        private DiscordNotifier $notifier,
     ) {
     }
 
@@ -64,11 +66,17 @@ class SubuserCreationService
                 ]);
             }
 
-            return $this->subuserRepository->create([
+            $subuser = $this->subuserRepository->create([
                 'user_id' => $user->id,
                 'server_id' => $server->id,
                 'permissions' => array_unique($permissions),
             ]);
+
+            // Goes to the owner, not the person being added - someone gaining
+            // access to your server is your business.
+            $this->notifier->subuserAdded($server, $email);
+
+            return $subuser;
         });
     }
 }

@@ -5,6 +5,7 @@ namespace Pterodactyl\Http\Controllers\Api\Remote\Backups;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Pterodactyl\Models\Backup;
+use Pterodactyl\Services\Discord\DiscordNotifier;
 use Illuminate\Http\JsonResponse;
 use Pterodactyl\Facades\Activity;
 use Pterodactyl\Exceptions\DisplayException;
@@ -20,7 +21,7 @@ class BackupStatusController extends Controller
     /**
      * BackupStatusController constructor.
      */
-    public function __construct(private BackupManager $backupManager)
+    public function __construct(private BackupManager $backupManager, private DiscordNotifier $notifier)
     {
     }
 
@@ -54,6 +55,8 @@ class BackupStatusController extends Controller
 
         $action = $request->boolean('successful') ? 'server:backup.complete' : 'server:backup.fail';
         $log = Activity::event($action)->subject($model, $model->server)->property('name', $model->name);
+
+        $this->notifier->backupFinished($server, $model->name, $request->boolean('successful'));
 
         $log->transaction(function () use ($model, $request) {
             $successful = $request->boolean('successful');
