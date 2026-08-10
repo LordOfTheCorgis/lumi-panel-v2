@@ -195,34 +195,29 @@ const Sidebar = ({ children }: Props) => {
                         <SidebarLink to={'/'} icon={faLayerGroup} exact>
                             Dashboard
                         </SidebarLink>
-                        {rootAdmin && (
-                            <SidebarExternalLink href={'/admin'} icon={faCogs}>
-                                Admin
-                            </SidebarExternalLink>
-                        )}
                     </SidebarSection>
+
                     {children}
 
-                    {/*
-                        Links off the panel entirely. `mt-auto` pins them to the
-                        bottom of the scroll area and the rule above keeps them
-                        visually apart from the panel's own navigation, so nobody
-                        mistakes them for another page of the panel.
-                    */}
-                    <div className={'mt-auto pt-2 border-t border-neutral-800'}>
-                        <SidebarSection label={'Lumix Solutions'}>
-                            <SidebarExternalLink
-                                href={'https://billing.lumixsolutions.org/'}
-                                icon={faCreditCard}
-                                newTab
-                            >
-                                Billing
-                            </SidebarExternalLink>
-                            <SidebarExternalLink href={'https://status.lumixsolutions.org'} icon={faHeartbeat} newTab>
-                                Status
+                    {/* Links off the panel entirely, kept in their own labelled
+                        group so nobody mistakes them for another panel page. */}
+                    <SidebarSection label={'Lumix Solutions'}>
+                        <SidebarExternalLink href={'https://billing.lumixsolutions.org/'} icon={faCreditCard} newTab>
+                            Billing
+                        </SidebarExternalLink>
+                        <SidebarExternalLink href={'https://status.lumixsolutions.org'} icon={faHeartbeat} newTab>
+                            Status
+                        </SidebarExternalLink>
+                    </SidebarSection>
+
+                    {/* Only rendered for root admins. */}
+                    {rootAdmin && (
+                        <SidebarSection label={'Administration'}>
+                            <SidebarExternalLink href={'/admin'} icon={faCogs}>
+                                Admin Panel
                             </SidebarExternalLink>
                         </SidebarSection>
-                    </div>
+                    )}
                 </div>
 
                 <div className={'shrink-0 border-t border-neutral-800 p-3 space-y-0.5'}>
