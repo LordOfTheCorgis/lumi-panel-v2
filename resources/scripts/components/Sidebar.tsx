@@ -121,7 +121,7 @@ const Sidebar = ({ children }: Props) => {
             {/* Mobile header. Hidden entirely once the sidebar becomes permanent. */}
             <div
                 className={
-                    'md:hidden sticky top-0 z-30 flex items-center h-14 px-4 bg-neutral-900 shadow-md gap-3 border-b border-black/40'
+                    'md:hidden sticky top-0 z-30 flex items-center h-14 px-4 bg-black gap-3 border-b border-neutral-800'
                 }
             >
                 <button
@@ -148,12 +148,12 @@ const Sidebar = ({ children }: Props) => {
             <nav
                 aria-label={'Main'}
                 className={
-                    'fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-neutral-900 border-r border-black/40 ' +
+                    'fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-black border-r border-neutral-800 ' +
                     'transition-transform duration-200 ease-in-out md:translate-x-0 ' +
                     (open ? 'translate-x-0' : '-translate-x-full')
                 }
             >
-                <div className={'flex items-center h-14 px-5 shrink-0 border-b border-black/40'}>
+                <div className={'flex items-center h-14 px-5 shrink-0 border-b border-neutral-800'}>
                     <Link
                         to={'/'}
                         className={
@@ -188,7 +188,7 @@ const Sidebar = ({ children }: Props) => {
                     {children}
                 </div>
 
-                <div className={'shrink-0 border-t border-black/40 p-3 space-y-0.5'}>
+                <div className={'shrink-0 border-t border-neutral-800 p-3 space-y-0.5'}>
                     <NavLink
                         to={'/account'}
                         onClick={() => setOpen(false)}

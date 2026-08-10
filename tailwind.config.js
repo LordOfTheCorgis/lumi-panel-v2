@@ -37,16 +37,16 @@ const danger = {
 // Lightness values are carried over verbatim from the old scale so every
 // existing contrast pairing in the UI still holds.
 const gray = {
-    50: 'hsl(0, 0%, 97%)',
-    100: 'hsl(0, 0%, 91%)',
-    200: 'hsl(0, 0%, 82%)',
-    300: 'hsl(0, 2%, 65%)',
-    400: 'hsl(0, 3%, 53%)',
-    500: 'hsl(0, 3%, 43%)',
-    600: 'hsl(0, 4%, 37%)',
-    700: 'hsl(0, 5%, 30%)',
-    800: 'hsl(0, 5%, 25%)',
-    900: 'hsl(0, 6%, 16%)',
+    50: '#f7f7f7',
+    100: '#e8e8e8',
+    200: '#d1d1d1',
+    300: '#a6a6a6',
+    400: '#878787',
+    500: '#6e6e6e',
+    600: '#5e5e5e',
+    700: '#4d4d4d',
+    800: '#404040',
+    900: '#292929',
 };
 
 module.exports = {
@@ -59,8 +59,8 @@ module.exports = {
                 header: ['"IBM Plex Sans"', '"Roboto"', 'system-ui', 'sans-serif'],
             },
             colors: {
-                // Was #131a20 — a blue near-black. Same lightness, neutral hue.
-                black: '#131111',
+                // Was #131a20 — a blue near-black. Same lightness, no hue.
+                black: '#171717',
                 // Brand color. Prefer "lumi" in new code; "primary", "blue" and "cyan"
                 // are aliases kept so upstream Pterodactyl markup picks up the brand
                 // without a rewrite.

@@ -11,7 +11,15 @@ interface Props {
 }
 
 const ButtonStyle = styled.button<Omit<Props, 'isLoading'>>`
-    ${tw`relative inline-block rounded p-2 uppercase tracking-wide text-sm transition-all duration-150 border`};
+    ${tw`relative inline-flex items-center justify-center gap-2 rounded-md p-2 text-sm font-medium tracking-normal transition duration-150 border`};
+
+    &:focus-visible {
+        ${tw`ring-2 ring-primary-500 ring-opacity-50`};
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(1px);
+    }
 
     ${(props) =>
         ((!props.isSecondary && !props.color) || props.color === 'primary') &&
