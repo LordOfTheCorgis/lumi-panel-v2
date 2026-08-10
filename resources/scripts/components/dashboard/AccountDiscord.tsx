@@ -10,7 +10,7 @@ import { ApplicationStore } from '@/state';
 
 const AccountDiscord = () => {
     const { clearAndAddHttpError } = useFlashKey('account:discord');
-    const { data, mutate } = useDiscordLink({ revalidateOnMount: true });
+    const { data, error, mutate } = useDiscordLink({ revalidateOnMount: true });
     const [busy, setBusy] = useState(false);
     const rootAdmin = useStoreState((state: ApplicationStore) => state.user.data!.rootAdmin);
 
@@ -18,11 +18,11 @@ const AccountDiscord = () => {
     // the integration is unconfigured seemed tidy, but it means an admin who
     // just built the feature loads the page, sees nothing, and assumes it is
     // broken. Show the card and say what's missing instead.
-    if (!data) {
+    if (!data && !error) {
         return null;
     }
 
-    const unconfigured = !data.enabled && !data.linked;
+    const unconfigured = !error && !data?.enabled && !data?.linked;
 
     const onUnlink = () => {
         setBusy(true);
@@ -40,7 +40,22 @@ const AccountDiscord = () => {
             </div>
 
             <div className={'p-4'}>
-                {unconfigured ? (
+                {error ? (
+                    <>
+                        {/* If the status endpoint is broken we have no idea whether
+                            they're linked - but unlink is a different endpoint and
+                            works regardless, so never hide it behind a failed read. */}
+                        <p className={'text-sm text-yellow-400'}>Could not load your Discord status.</p>
+                        <p className={'mt-2 text-xs text-neutral-500'}>
+                            If your account is linked you can still disconnect it below.
+                        </p>
+                        <div className={'mt-4'}>
+                            <Button.Danger size={Button.Sizes.Small} disabled={busy} onClick={onUnlink}>
+                                Unlink Discord
+                            </Button.Danger>
+                        </div>
+                    </>
+                ) : unconfigured ? (
                     <>
                         <p className={'text-sm text-neutral-300'}>
                             Discord linking has not been set up on this panel yet.
@@ -62,21 +77,24 @@ const AccountDiscord = () => {
                             </p>
                         )}
                     </>
-                ) : data.linked ? (
+                ) : data?.linked ? (
                     <>
                         <div className={'flex items-center gap-2'}>
                             <span className={'h-2 w-2 flex-shrink-0 rounded-full bg-green-500'} />
                             <span className={'text-sm font-medium text-green-400'}>Linked</span>
                         </div>
                         <p className={'mt-2 text-sm text-neutral-300'}>
-                            Connected as <span className={'font-medium text-neutral-100'}>{data.username}</span>
+                            Connected as <span className={'font-medium text-neutral-100'}>{data?.username}</span>
                         </p>
-                        {data.linkedAt && (
+                        {/* isNaN guard: date-fns throws a RangeError on an
+                            invalid Date rather than returning something useless,
+                            which takes the whole card down with it. */}
+                        {data?.linkedAt && !isNaN(data.linkedAt.getTime()) && (
                             <p className={'mt-0.5 text-xs text-neutral-500'}>
                                 Linked on {format(data.linkedAt, 'MMMM do, yyyy')}
                             </p>
                         )}
-                        {data.enabled ? (
+                        {data?.enabled ? (
                             <p className={'mt-3 text-xs text-neutral-500'}>
                                 You will get a DM about security changes to your account, and about your servers being
                                 suspended, finishing installation, backup results, or a large number of files being

@@ -142,6 +142,9 @@ class User extends Model implements
     protected $casts = [
         'root_admin' => 'boolean',
         'password_changed_at' => 'datetime',
+        // Without this it comes back as a plain string and every ?->toAtomString()
+        // on it is a fatal. Which is exactly what happened.
+        'discord_linked_at' => 'datetime',
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',
