@@ -141,6 +141,7 @@ class User extends Model implements
      */
     protected $casts = [
         'root_admin' => 'boolean',
+        'password_changed_at' => 'datetime',
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',

@@ -36,6 +36,12 @@ Route::prefix('/account')->middleware(AccountSubject::class)->group(function () 
 
     Route::get('/activity', Client\ActivityLogController::class)->name('api:client.account.activity');
 
+    Route::prefix('/sessions')->group(function () {
+        Route::get('/', [Client\SessionController::class, 'index']);
+        Route::delete('/', [Client\SessionController::class, 'deleteOthers']);
+        Route::delete('/{hash}', [Client\SessionController::class, 'delete']);
+    });
+
     Route::get('/api-keys', [Client\ApiKeyController::class, 'index']);
     Route::post('/api-keys', [Client\ApiKeyController::class, 'store']);
     Route::delete('/api-keys/{identifier}', [Client\ApiKeyController::class, 'delete']);

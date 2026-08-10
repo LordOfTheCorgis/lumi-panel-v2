@@ -75,6 +75,11 @@ class AccountController extends ClientApiController
             return $this->updateService->handle($request->user(), $request->validated());
         });
 
+        // Stamped here rather than in UserUpdateService so an admin resetting
+        // someone's password from the admin panel doesn't move the date; this is
+        // "when did *you* last change it".
+        $user->forceFill(['password_changed_at' => now()])->saveOrFail();
+
         $guard = $this->manager->guard();
         // If you do not update the user in the session you'll end up working with a
         // cached copy of the user that does not include the updated password. Do this

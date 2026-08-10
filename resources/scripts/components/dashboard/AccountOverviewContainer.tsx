@@ -1,53 +1,58 @@
 import * as React from 'react';
-import ContentBox from '@/components/elements/ContentBox';
 import UpdatePasswordForm from '@/components/dashboard/forms/UpdatePasswordForm';
 import UpdateEmailAddressForm from '@/components/dashboard/forms/UpdateEmailAddressForm';
 import ConfigureTwoFactorForm from '@/components/dashboard/forms/ConfigureTwoFactorForm';
 import PageContentBlock from '@/components/elements/PageContentBlock';
-import tw from 'twin.macro';
-import { breakpoint } from '@/theme';
-import styled from 'styled-components/macro';
+import PageHeader from '@/components/elements/PageHeader';
+import TitledGreyBox from '@/components/elements/TitledGreyBox';
+import FlashMessageRender from '@/components/FlashMessageRender';
 import MessageBox from '@/components/MessageBox';
+import AccountIdentity from '@/components/dashboard/AccountIdentity';
+import AccountSecuritySummary from '@/components/dashboard/AccountSecuritySummary';
+import AccountRecentActivity from '@/components/dashboard/AccountRecentActivity';
+import AccountSessions from '@/components/dashboard/AccountSessions';
+import { useAccountDetails } from '@/api/account/getAccountDetails';
 import { useLocation } from 'react-router-dom';
-
-const Container = styled.div`
-    ${tw`flex flex-wrap`};
-
-    & > div {
-        ${tw`w-full`};
-
-        ${breakpoint('sm')`
-      width: calc(50% - 1rem);
-    `}
-
-        ${breakpoint('md')`
-      ${tw`w-auto flex-1`};
-    `}
-    }
-`;
+import { faEnvelope, faLock, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default () => {
     const { state } = useLocation<undefined | { twoFactorRedirect?: boolean }>();
+    const { data: details } = useAccountDetails();
 
     return (
         <PageContentBlock title={'Account Overview'}>
+            <PageHeader title={'Account'} description={'Your profile, security settings and recent activity.'} />
+
             {state?.twoFactorRedirect && (
                 <MessageBox title={'2-Factor Required'} type={'error'}>
                     Your account must have two-factor authentication enabled in order to continue.
                 </MessageBox>
             )}
 
-            <Container css={[tw`lg:grid lg:grid-cols-3 mb-10`, state?.twoFactorRedirect ? tw`mt-4` : tw`mt-10`]}>
-                <ContentBox title={'Update Password'} showFlashes={'account:password'}>
-                    <UpdatePasswordForm />
-                </ContentBox>
-                <ContentBox css={tw`mt-8 sm:mt-0 sm:ml-8`} title={'Update Email Address'} showFlashes={'account:email'}>
-                    <UpdateEmailAddressForm />
-                </ContentBox>
-                <ContentBox css={tw`md:ml-8 mt-8 md:mt-0`} title={'Two-Step Verification'}>
-                    <ConfigureTwoFactorForm />
-                </ContentBox>
-            </Container>
+            <div className={'space-y-6'}>
+                <AccountIdentity details={details} />
+
+                <AccountSecuritySummary details={details} />
+
+                <div className={'grid gap-6 lg:grid-cols-3'}>
+                    <TitledGreyBox title={'Update Password'} icon={faLock}>
+                        <FlashMessageRender byKey={'account:password'} className={'mb-3'} />
+                        <UpdatePasswordForm />
+                    </TitledGreyBox>
+                    <TitledGreyBox title={'Update Email Address'} icon={faEnvelope}>
+                        <FlashMessageRender byKey={'account:email'} className={'mb-3'} />
+                        <UpdateEmailAddressForm />
+                    </TitledGreyBox>
+                    <TitledGreyBox title={'Two-Step Verification'} icon={faShieldAlt}>
+                        <ConfigureTwoFactorForm recoveryTokens={details?.recoveryTokens} />
+                    </TitledGreyBox>
+                </div>
+
+                <div className={'grid gap-6 lg:grid-cols-2'}>
+                    <AccountSessions />
+                    <AccountRecentActivity />
+                </div>
+            </div>
         </PageContentBlock>
     );
 };
