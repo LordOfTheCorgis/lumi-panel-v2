@@ -28,16 +28,10 @@ const fadeUp = keyframes`
     to   { opacity: 1; transform: translateY(0); }
 `;
 
-const float = keyframes`
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-6px); }
-`;
-
-// Travels the full width of the card. The highlight is 45% as wide as its
-// parent, so 222% of its own width clears the far edge.
-const sweep = keyframes`
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(222%); }
+// Drives the highlight that travels around the card's border.
+const orbit = keyframes`
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
 `;
 
 const Stage = styled.div`
@@ -49,32 +43,49 @@ const Stage = styled.div`
     }
 `;
 
+/**
+ * The border is drawn as a 1px band of background behind an inset surface,
+ * rather than with `border`. That lets a rotating conic gradient sit in the
+ * band and read as a highlight orbiting all four sides, which a gradient on a
+ * real border cannot do.
+ */
 const Card = styled.div`
-    ${tw`relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 bg-opacity-70 p-6 sm:p-8 shadow-2xl`};
-    backdrop-filter: blur(12px);
+    ${tw`relative overflow-hidden rounded-2xl shadow-2xl`};
+    padding: 1px;
+    background-color: #2b2b2b;
+    isolation: isolate;
 
-    /* Static hairline along the top edge. */
     &::before {
         content: '';
-        ${tw`absolute inset-x-0 top-0 h-px`};
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
-    }
-
-    /* Brand highlight that periodically travels along that hairline. */
-    &::after {
-        content: '';
-        ${tw`absolute left-0 top-0 h-px`};
-        width: 45%;
-        background: linear-gradient(90deg, transparent, rgba(255, 76, 76, 0.9), transparent);
-        animation: ${sweep} 5s cubic-bezier(0.4, 0, 0.2, 1) 1.4s infinite;
+        ${tw`absolute left-1/2 top-1/2`};
+        width: 200%;
+        aspect-ratio: 1 / 1;
+        background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 250deg,
+            rgba(255, 76, 76, 0.12) 285deg,
+            rgba(255, 76, 76, 0.9) 330deg,
+            #ff7676 348deg,
+            rgba(255, 76, 76, 0.12) 356deg,
+            transparent 360deg
+        );
+        animation: ${orbit} 6s linear infinite;
     }
 
     @media (prefers-reduced-motion: reduce) {
-        &::after {
+        &::before {
             animation: none;
             opacity: 0;
         }
     }
+`;
+
+// Sits on top of the border band, leaving only the 1px ring exposed.
+const Surface = styled.div`
+    ${tw`relative rounded-2xl bg-neutral-900 bg-opacity-80 p-6 sm:p-8`};
+    z-index: 1;
+    backdrop-filter: blur(12px);
 `;
 
 // Staggers the card's contents in behind the card itself.
@@ -89,12 +100,6 @@ const Reveal = styled.div<{ $delay: number }>`
 
 const Mark = styled.img`
     ${tw`mx-auto h-16 w-16 select-none`};
-    animation: ${float} 6s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(255, 76, 76, 0.35));
-
-    @media (prefers-reduced-motion: reduce) {
-        animation: none;
-    }
 `;
 
 export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }, ref) => {
@@ -106,17 +111,21 @@ export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }
 
             <Form {...props} ref={ref}>
                 <Card>
-                    <Reveal $delay={120}>
-                        <div css={tw`text-center`}>
-                            <Mark src={Logo} alt={name} draggable={false} />
-                            <h1 css={tw`mt-4 font-header text-2xl font-semibold tracking-tight text-white`}>{name}</h1>
-                            {title && <p css={tw`mt-1 text-sm text-neutral-400`}>{title}</p>}
-                        </div>
-                    </Reveal>
+                    <Surface>
+                        <Reveal $delay={120}>
+                            <div css={tw`text-center`}>
+                                <Mark src={Logo} alt={name} draggable={false} />
+                                <h1 css={tw`mt-4 font-header text-2xl font-semibold tracking-tight text-white`}>
+                                    {name}
+                                </h1>
+                                {title && <p css={tw`mt-1 text-sm text-neutral-400`}>{title}</p>}
+                            </div>
+                        </Reveal>
 
-                    <div css={tw`my-6 h-px bg-neutral-800`} />
+                        <div css={tw`my-6 h-px bg-neutral-800`} />
 
-                    <Reveal $delay={220}>{children}</Reveal>
+                        <Reveal $delay={220}>{children}</Reveal>
+                    </Surface>
                 </Card>
             </Form>
 
