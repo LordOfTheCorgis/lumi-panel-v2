@@ -82,13 +82,17 @@ class DiscordService
     /**
      * DM a user an embed. No-op if they have not linked an account.
      */
-    public function notify(User $user, array $embed): void
+    public function notify(?User $user, array $embed): void
     {
-        if (!$this->enabled() || empty($user->discord_id)) {
-            return;
-        }
-
+        // Whole body inside the try, not just the HTTP calls. A notification is
+        // a side effect of some other action - if anything in here throws, the
+        // thing the user actually asked for (deleting files, suspending a
+        // server) must still succeed.
         try {
+            if ($user === null || !$this->enabled() || empty($user->discord_id)) {
+                return;
+            }
+
             $client = new Client([
                 'timeout' => 10,
                 'headers' => [
@@ -112,7 +116,7 @@ class DiscordService
         } catch (Throwable $e) {
             // Closed DMs are the common case here and are not worth shouting about.
             $this->log->notice('discord: could not deliver a direct message', [
-                'user' => $user->id,
+                'user' => $user?->id,
                 'error' => $e->getMessage(),
             ]);
         }

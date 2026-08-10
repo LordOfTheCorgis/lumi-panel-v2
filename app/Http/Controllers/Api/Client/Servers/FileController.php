@@ -233,7 +233,8 @@ class FileController extends ClientApiController
         // Deleting a pile of files in one go is either housekeeping or someone
         // wrecking the place. We can't tell which, so we ask.
         $count = count($request->input('files', []));
-        if ($count >= (int) config('discord.nuke_threshold', 25)) {
+        $threshold = (int) config('discord.nuke_threshold') ?: 25;
+        if ($count >= $threshold) {
             $this->notifier->possibleNuke($server, $count, $request->input('root') ?? '/');
         }
 
