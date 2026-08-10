@@ -10,6 +10,7 @@ import SearchContainer from '@/components/dashboard/search/SearchContainer';
 import http from '@/api/http';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import Avatar from '@/components/Avatar';
+import Logo from '@/assets/images/logo.png';
 import {
     SidebarActiveStyle,
     SidebarIconStyle as iconSlot,
@@ -131,8 +132,14 @@ const Sidebar = ({ children }: Props) => {
                 >
                     <FontAwesomeIcon icon={faBars} />
                 </button>
-                <Link to={'/'} className={'text-lg font-header font-medium no-underline text-neutral-100 truncate'}>
-                    {name}
+                <Link
+                    to={'/'}
+                    className={
+                        'flex items-center gap-2 text-lg font-header font-medium no-underline text-neutral-100 truncate'
+                    }
+                >
+                    <img src={Logo} alt={''} className={'h-7 w-7 shrink-0'} draggable={false} />
+                    <span className={'truncate'}>{name}</span>
                 </Link>
             </div>
 
@@ -157,10 +164,11 @@ const Sidebar = ({ children }: Props) => {
                     <Link
                         to={'/'}
                         className={
-                            'text-xl font-header font-medium no-underline text-neutral-100 hover:text-lumi-400 transition-colors duration-150 truncate'
+                            'flex items-center gap-2.5 min-w-0 text-lg font-header font-medium no-underline text-neutral-100 hover:text-lumi-400 transition-colors duration-150'
                         }
                     >
-                        {name}
+                        <img src={Logo} alt={''} className={'h-8 w-8 shrink-0'} draggable={false} />
+                        <span className={'truncate'}>{name}</span>
                     </Link>
                     <button
                         onClick={() => setOpen(false)}

@@ -3,6 +3,7 @@ import { Form } from 'formik';
 import { useStoreState } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import FlashMessageRender from '@/components/FlashMessageRender';
+import Logo from '@/assets/images/logo.png';
 import tw from 'twin.macro';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
@@ -22,11 +23,9 @@ export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }
     return (
         <div css={tw`w-full max-w-md`}>
             <div css={tw`mb-8 text-center`}>
-                <h1 css={tw`font-header text-4xl font-semibold tracking-tight text-white`}>
-                    {name}
-                    <span css={tw`text-lumi-500`}>.</span>
-                </h1>
-                {title && <p css={tw`mt-2 text-sm text-neutral-400`}>{title}</p>}
+                <img src={Logo} alt={name} css={tw`mx-auto h-20 w-20 select-none`} draggable={false} />
+                <h1 css={tw`mt-4 font-header text-2xl font-semibold tracking-tight text-white`}>{name}</h1>
+                {title && <p css={tw`mt-1 text-sm text-neutral-400`}>{title}</p>}
             </div>
 
             <FlashMessageRender css={tw`mb-4`} />
@@ -41,7 +40,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }
             </Form>
 
             <p css={tw`mt-8 text-center text-xs text-neutral-600`}>
-                &copy; {new Date().getFullYear()} {name}
+                &copy; 2025 - {new Date().getFullYear()} Lumix Solutions
                 <span css={tw`mx-2`}>&middot;</span>
                 powered by{' '}
                 <a

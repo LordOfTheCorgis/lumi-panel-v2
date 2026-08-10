@@ -26,6 +26,9 @@ const PageContentBlock: React.FC<PageContentBlockProps> = ({ title, showFlashKey
                 </ContentContainer>
                 <ContentContainer css={tw`mb-4`}>
                     <p css={tw`text-center text-neutral-500 text-xs`}>
+                        &copy; 2025 - {new Date().getFullYear()} Lumix Solutions
+                        <span css={tw`mx-2`}>&middot;</span>
+                        powered by{' '}
                         <a
                             rel={'noopener nofollow noreferrer'}
                             href={'https://pterodactyl.io'}
@@ -34,7 +37,6 @@ const PageContentBlock: React.FC<PageContentBlockProps> = ({ title, showFlashKey
                         >
                             Pterodactyl&reg;
                         </a>
-                        &nbsp;&copy; 2015 - {new Date().getFullYear()}
                     </p>
                 </ContentContainer>
             </>

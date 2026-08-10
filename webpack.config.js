@@ -59,10 +59,13 @@ module.exports = {
                 ],
             },
             {
+                // Was "file-loader", which hashes with MD4 and therefore dies on
+                // OpenSSL 3 ("digital envelope routines::unsupported"). Webpack 5
+                // emits these natively with a modern hash and no extra loader.
                 test: /\.(png|jp(e?)g|gif)$/,
-                loader: 'file-loader',
-                options: {
-                    name: 'images/[name].[hash:8].[ext]',
+                type: 'asset/resource',
+                generator: {
+                    filename: 'images/[name].[contenthash:8][ext]',
                 },
             },
             {
