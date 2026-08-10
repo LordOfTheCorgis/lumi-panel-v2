@@ -12,6 +12,21 @@ const _Avatar = ({ variant = 'beam', ...props }: AvatarProps) => (
 
 const _UserAvatar = ({ variant = 'beam', ...props }: Omit<Props, 'name'>) => {
     const uuid = useStoreState((state) => state.user.data?.uuid);
+    const avatarUrl = useStoreState((state) => state.user.data?.avatarUrl);
+
+    // Uploaded picture wins; otherwise fall back to the generated one, which is
+    // what every account starts with.
+    if (avatarUrl) {
+        return (
+            <img
+                src={avatarUrl}
+                alt={''}
+                draggable={false}
+                className={'h-full w-full object-cover'}
+                style={{ aspectRatio: '1 / 1' }}
+            />
+        );
+    }
 
     return <BoringAvatar colors={palette} name={uuid || 'system'} variant={variant} {...props} />;
 };

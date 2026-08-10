@@ -28,6 +28,8 @@ return [
             'email-changed' => 'Changed email from :old to :new',
             'password-changed' => 'Changed password',
             'session-revoked' => 'Signed out another device',
+            'avatar-updated' => 'Uploaded a new profile picture',
+            'avatar-removed' => 'Removed their profile picture',
         ],
         'api-key' => [
             'create' => 'Created new API key :identifier',

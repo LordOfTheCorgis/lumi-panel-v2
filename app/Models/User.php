@@ -197,10 +197,21 @@ class User extends Model implements
     /**
      * Return the user model in a format that can be passed over to Vue templates.
      */
+    /**
+     * Public URL of the uploaded avatar, or null when the user has never set
+     * one and should get the generated fallback.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return empty($this->avatar)
+            ? null
+            : \Illuminate\Support\Facades\Storage::disk('public')->url('avatars/' . $this->avatar);
+    }
+
     public function toVueObject(): array
     {
         return Collection::make($this->toArray())->except(['id', 'external_id'])
-            ->merge(['identifier' => $this->identifier])
+            ->merge(['identifier' => $this->identifier, 'avatar_url' => $this->avatar_url])
             ->toArray();
     }
 

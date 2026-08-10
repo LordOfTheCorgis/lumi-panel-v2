@@ -82,6 +82,11 @@ $PKG_BUILD
 step "Running migrations"
 php artisan migrate --force
 
+step "Linking public storage"
+# Uploaded avatars live on the public disk and are served through this symlink.
+# Harmless to re-run; it no-ops when the link already exists.
+php artisan storage:link 2>/dev/null || true
+
 step "Clearing caches"
 php artisan optimize:clear
 
