@@ -15,6 +15,7 @@ import Input from '@/components/elements/Input';
 import setSelectedDockerImage from '@/api/server/setSelectedDockerImage';
 import InputSpinner from '@/components/elements/InputSpinner';
 import useFlash from '@/plugins/useFlash';
+import { Alert } from '@/components/elements/alert';
 
 const StartupContainer = () => {
     const [loading, setLoading] = useState(false);
@@ -34,6 +35,11 @@ const StartupContainer = () => {
         ...variables,
         dockerImages: { [variables.dockerImage]: variables.dockerImage },
     });
+
+    // Keyed off FIVEM_LICENSE rather than the TXADMIN_PORT check the router
+    // uses, because this notice is specifically about the txAdmin data-location
+    // step and every FiveM egg carries the licence key.
+    const isFiveM = (data?.variables ?? variables.variables).some((v) => v.envVariable === 'FIVEM_LICENSE');
 
     const setServerFromState = ServerContext.useStoreActions((actions) => actions.server.setServerFromState);
     const isCustomImage =
@@ -84,6 +90,20 @@ const StartupContainer = () => {
         )
     ) : (
         <ServerContentBlock title={'Startup Settings'} showFlashKey={'startup:image'}>
+            {isFiveM && (
+                <Alert type={'warning'} className={'mb-6'}>
+                    <div className={'text-sm'}>
+                        <p className={'font-semibold'}>Setting up txAdmin?</p>
+                        <p className={'mt-1'}>
+                            When txAdmin asks where your server data lives, pick{' '}
+                            <span className={'font-semibold'}>Existing Server Data</span> and enter{' '}
+                            <code className={'rounded bg-black/40 px-1.5 py-0.5 font-mono'}>/home/container/</code> as
+                            the path. That saves digging down into the <code className={'font-mono'}>txData</code>{' '}
+                            folder, and it sets the TCP and UDP ports for you automatically.
+                        </p>
+                    </div>
+                </Alert>
+            )}
             <div css={tw`md:flex`}>
                 <TitledGreyBox title={'Startup Command'} css={tw`flex-1`}>
                     <div css={tw`px-1 py-2`}>
