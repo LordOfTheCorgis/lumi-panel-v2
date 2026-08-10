@@ -49,18 +49,18 @@ export default ({ className }: PowerButtonProps) => {
                 Forcibly stopping a server can lead to data corruption.
             </Dialog.Confirm>
             <Can action={'control.start'}>
-                <Button
+                <Button.Green
                     className={'flex-1'}
                     disabled={status !== 'offline'}
                     onClick={onButtonClick.bind(this, 'start')}
                 >
                     Start
-                </Button>
+                </Button.Green>
             </Can>
             <Can action={'control.restart'}>
-                <Button.Text className={'flex-1'} disabled={!status} onClick={onButtonClick.bind(this, 'restart')}>
+                <Button.Yellow className={'flex-1'} disabled={!status} onClick={onButtonClick.bind(this, 'restart')}>
                     Restart
-                </Button.Text>
+                </Button.Yellow>
             </Can>
             <Can action={'control.stop'}>
                 <Button.Danger

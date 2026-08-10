@@ -1,32 +1,38 @@
 // Lumix Solutions brand palette. 500 is the brand color (#ff4c4c); the rest of
 // the ramp is derived from it so every Tailwind shade lands on-brand.
+// Pulled back from 100% saturation to ~80%. #ff4c4c is the logo's red and it's
+// gorgeous on a 1024px mark, but spread across every button, border and focus
+// ring in the panel it was shouting. Same hue, same lightness ramp, just less
+// of it. The logo itself still uses the original.
 const lumi = {
-    50: '#fff1f1',
-    100: '#ffdfdf',
-    200: '#ffc4c4',
-    300: '#ffa0a0',
-    400: '#ff7676',
-    500: '#ff4c4c',
-    600: '#ed2020',
-    700: '#c81414',
-    800: '#a51414',
-    900: '#881818',
+    50: '#fdf1f1',
+    100: '#fce3e3',
+    200: '#f9c8c8',
+    300: '#f5a8a8',
+    400: '#f18383',
+    500: '#ed5e5e',
+    600: '#e72727',
+    700: '#c51616',
+    800: '#a51212',
+    900: '#8e1010',
 };
 
-// The brand color occupies the bright-red slot, so destructive/error UI is
-// pushed to a deeper crimson. Without this, a "delete" button and a "primary"
-// button are indistinguishable.
+// A normal red for Stop / Delete / errors, rather than the pink-leaning crimson
+// this used to be. It still has to stay apart from the brand red or "Archive"
+// and "Delete" sitting next to each other become the same button — so danger is
+// darker and more saturated, brand is lighter and softer. Separated by
+// lightness, not hue.
 const danger = {
-    50: '#fdf2f4',
-    100: '#fbe1e5',
-    200: '#f4bcc4',
-    300: '#e88e9b',
-    400: '#d55c6e',
-    500: '#bf2f45',
-    600: '#a32138',
-    700: '#851b2e',
-    800: '#691725',
-    900: '#52131e',
+    50: '#fdf3f3',
+    100: '#fbe0e0',
+    200: '#f5bcbc',
+    300: '#e88d8d',
+    400: '#d95c5c',
+    500: '#c92a2a',
+    600: '#b02020',
+    700: '#8f1a1a',
+    800: '#731717',
+    900: '#5c1414',
 };
 
 // Upstream's "neutral" scale sat at hue 209-216 with up to 24% saturation,

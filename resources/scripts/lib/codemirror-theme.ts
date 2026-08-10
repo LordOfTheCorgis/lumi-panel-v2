@@ -11,7 +11,7 @@ import { tags as t } from '@lezer/highlight';
 const c = {
     background: '#0a0a0a',
     foreground: '#d1d1d1',
-    caret: '#ff4c4c',
+    caret: '#ed5e5e',
     selection: '#333333',
     activeLine: '#141414',
     gutterForeground: '#5e5e5e',
@@ -23,7 +23,7 @@ const c = {
     selectedMatch: '#7a4a1f',
 
     comment: '#6b6b6b',
-    keyword: '#ff7676',
+    keyword: '#f18383',
     operator: '#ff9d76',
     string: '#a3d977',
     number: '#ffd479',
@@ -167,8 +167,8 @@ export const lumiEditorTheme: Extension = EditorView.theme(
             padding: '0.15rem 0.5rem',
         },
         '.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-            backgroundColor: 'rgba(255, 76, 76, 0.18)',
-            color: '#ff7676',
+            backgroundColor: 'rgba(237, 94, 94, 0.18)',
+            color: '#f18383',
         },
     },
     { dark: true }

@@ -64,10 +64,10 @@ const Card = styled.div`
             from 0deg,
             transparent 0deg,
             transparent 250deg,
-            rgba(255, 76, 76, 0.12) 285deg,
-            rgba(255, 76, 76, 0.9) 330deg,
-            #ff7676 348deg,
-            rgba(255, 76, 76, 0.12) 356deg,
+            rgba(237, 94, 94, 0.12) 285deg,
+            rgba(237, 94, 94, 0.9) 330deg,
+            #f18383 348deg,
+            rgba(237, 94, 94, 0.12) 356deg,
             transparent 360deg
         );
         animation: ${orbit} 6s linear infinite;

@@ -8,7 +8,9 @@
 }
 
 .title {
-    @apply font-header text-xl font-medium mb-2 text-gray-50 pr-4;
+    /* Was mb-2. The description underneath was floating too far off the title;
+       3px keeps them reading as one block. */
+    @apply font-header text-xl font-medium mb-[3px] text-gray-50 pr-4;
 }
 
 .close_icon {

@@ -50,14 +50,14 @@ register(['html', 'htm', 'css', 'scss', 'sass', 'vue', 'svelte'], faFileCode, '#
 register(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'svg'], faFileImage, '#e0b3ff');
 register(['mp3', 'wav', 'ogg', 'flac', 'm4a'], faFileAudio, '#e0b3ff');
 register(['mp4', 'mkv', 'webm', 'mov', 'avi'], faFileVideo, '#e0b3ff');
-register(['pdf'], faFilePdf, '#ff7676');
+register(['pdf'], faFilePdf, '#f18383');
 register(['csv', 'tsv'], faFileCsv, '#a3d977');
 register(['db', 'sqlite', 'sqlite3', 'mca', 'dat', 'mcr', 'nbt'], faDatabase, '#d9a441');
 register(['md', 'markdown', 'rst', 'txt', 'log'], faBook, '#8a8a8a');
 register(['pem', 'key', 'crt', 'cer', 'pub'], faKey, '#d9a441');
 
 const DEFAULT: Presentation = { icon: faFileAlt, color: '#8a8a8a' };
-const DIRECTORY: Presentation = { icon: faFolder, color: '#ff4c4c' };
+const DIRECTORY: Presentation = { icon: faFolder, color: '#ed5e5e' };
 const SYMLINK: Presentation = { icon: faFileImport, color: '#8a8a8a' };
 
 export default (file: FileObject): Presentation => {

@@ -40,7 +40,7 @@ const GlowTop = styled.div`
     left: 50%;
     width: 40rem;
     height: 40rem;
-    background-color: #ff4c4c;
+    background-color: #ed5e5e;
     animation: ${driftOne} 16s ease-in-out infinite;
 `;
 
