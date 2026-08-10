@@ -58,7 +58,7 @@ const ScreenBlock = ({ title, image, message, onBack, onRetry }: ScreenBlockProp
                 )}
                 <img src={image} css={tw`w-2/3 h-auto select-none mx-auto`} />
                 <h2 css={tw`mt-10 text-neutral-900 font-bold text-4xl`}>{title}</h2>
-                <p css={tw`text-sm text-neutral-700 mt-2`}>{message}</p>
+                <p css={tw`text-sm text-neutral-400 mt-2`}>{message}</p>
             </div>
         </div>
     </PageContentBlock>

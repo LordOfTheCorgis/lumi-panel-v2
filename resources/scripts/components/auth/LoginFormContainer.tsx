@@ -126,7 +126,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }
                             </div>
                         </Reveal>
 
-                        <div css={tw`my-6 h-px bg-neutral-800`} />
+                        <div css={tw`my-6 h-px bg-neutral-600`} />
 
                         <Reveal $delay={220}>{children}</Reveal>
                     </Surface>
@@ -134,7 +134,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, children, ...props }
             </Form>
 
             <Reveal $delay={320}>
-                <p css={tw`mt-8 text-center text-xs text-neutral-600`}>
+                <p css={tw`mt-8 text-center text-xs text-neutral-500`}>
                     &copy; 2025 - {new Date().getFullYear()} Lumix Solutions
                     <span css={tw`mx-2`}>&middot;</span>
                     powered by{' '}

@@ -36,17 +36,20 @@ const danger = {
 //
 // Lightness values are carried over verbatim from the old scale so every
 // existing contrast pairing in the UI still holds.
+// 50-500 are text tones; 600-900 are surfaces and borders. The dark end is
+// pitched to match the login stage (#0a0a0a page, near-black cards) so the
+// panel and the auth screens read as one product.
 const gray = {
     50: '#f7f7f7',
     100: '#e8e8e8',
     200: '#d1d1d1',
     300: '#a6a6a6',
-    400: '#878787',
+    400: '#8a8a8a',
     500: '#6e6e6e',
-    600: '#5e5e5e',
-    700: '#4d4d4d',
-    800: '#404040',
-    900: '#292929',
+    600: '#262626',
+    700: '#171717',
+    800: '#101010',
+    900: '#0a0a0a',
 };
 
 module.exports = {
