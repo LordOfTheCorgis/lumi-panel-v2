@@ -3,7 +3,15 @@ import { Link, NavLink } from 'react-router-dom';
 import { useLocation } from 'react-router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faBars, faCogs, faLayerGroup, faSignOutAlt, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {
+    faBars,
+    faCogs,
+    faCreditCard,
+    faHeartbeat,
+    faLayerGroup,
+    faSignOutAlt,
+    faTimes,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import SearchContainer from '@/components/dashboard/search/SearchContainer';
@@ -181,7 +189,7 @@ const Sidebar = ({ children }: Props) => {
                     </button>
                 </div>
 
-                <div className={'flex-1 overflow-y-auto py-2'}>
+                <div className={'flex flex-1 flex-col overflow-y-auto py-2'}>
                     <SidebarSection>
                         <SearchContainer />
                         <SidebarLink to={'/'} icon={faLayerGroup} exact>
@@ -194,6 +202,27 @@ const Sidebar = ({ children }: Props) => {
                         )}
                     </SidebarSection>
                     {children}
+
+                    {/*
+                        Links off the panel entirely. `mt-auto` pins them to the
+                        bottom of the scroll area and the rule above keeps them
+                        visually apart from the panel's own navigation, so nobody
+                        mistakes them for another page of the panel.
+                    */}
+                    <div className={'mt-auto pt-2 border-t border-neutral-800'}>
+                        <SidebarSection label={'Lumix Solutions'}>
+                            <SidebarExternalLink
+                                href={'https://billing.lumixsolutions.org/'}
+                                icon={faCreditCard}
+                                newTab
+                            >
+                                Billing
+                            </SidebarExternalLink>
+                            <SidebarExternalLink href={'https://status.lumixsolutions.org'} icon={faHeartbeat} newTab>
+                                Status
+                            </SidebarExternalLink>
+                        </SidebarSection>
+                    </div>
                 </div>
 
                 <div className={'shrink-0 border-t border-neutral-800 p-3 space-y-0.5'}>
