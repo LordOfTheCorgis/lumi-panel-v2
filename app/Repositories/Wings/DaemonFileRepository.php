@@ -132,11 +132,10 @@ class DaemonFileRepository extends DaemonRepository
             return $this->getHttpClient()->put(
                 sprintf('/api/servers/%s/files/rename', $this->server->uuid),
                 [
-                    'json' => array_filter([
+                    'json' => [
                         'root' => $root ?? '/',
                         'files' => $files,
-                        'format' => $format,
-                    ], fn ($value) => $value !== null),
+                    ],
                 ]
             );
         } catch (TransferException $exception) {
@@ -180,11 +179,10 @@ class DaemonFileRepository extends DaemonRepository
             return $this->getHttpClient()->post(
                 sprintf('/api/servers/%s/files/delete', $this->server->uuid),
                 [
-                    'json' => array_filter([
+                    'json' => [
                         'root' => $root ?? '/',
                         'files' => $files,
-                        'format' => $format,
-                    ], fn ($value) => $value !== null),
+                    ],
                 ]
             );
         } catch (TransferException $exception) {
@@ -262,11 +260,10 @@ class DaemonFileRepository extends DaemonRepository
             return $this->getHttpClient()->post(
                 sprintf('/api/servers/%s/files/chmod', $this->server->uuid),
                 [
-                    'json' => array_filter([
+                    'json' => [
                         'root' => $root ?? '/',
                         'files' => $files,
-                        'format' => $format,
-                    ], fn ($value) => $value !== null),
+                    ],
                 ]
             );
         } catch (TransferException $exception) {
