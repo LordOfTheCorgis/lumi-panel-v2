@@ -28,11 +28,22 @@ id -u nginx >/dev/null 2>&1 && WEB_USER="nginx"
 step "Checking prerequisites"
 command -v php >/dev/null || { echo "php not found"; exit 1; }
 command -v composer >/dev/null || { echo "composer not found"; exit 1; }
-command -v node >/dev/null || { echo "node not found - install Node 18+"; exit 1; }
+command -v node >/dev/null || { echo "node not found - see the install note below"; exit 1; }
 
+# Read the floor out of package.json rather than hardcoding it here, so this
+# check cannot drift away from what the build actually requires.
+NODE_REQUIRED="$(node -p "((require('./package.json').engines||{}).node||'').match(/[0-9]+/)?.[0] || 22" 2>/dev/null || echo 22)"
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-if [ "$NODE_MAJOR" -lt 18 ]; then
-    echo "node ${NODE_MAJOR} is too old; this build needs 18 or newer"
+
+if [ "$NODE_MAJOR" -lt "$NODE_REQUIRED" ]; then
+    cat <<EOF
+node ${NODE_MAJOR} is too old; this build needs ${NODE_REQUIRED} or newer.
+
+Debian's own packages are older than that, so install from NodeSource:
+
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_REQUIRED}.x | bash -
+    apt install -y nodejs
+EOF
     exit 1
 fi
 
