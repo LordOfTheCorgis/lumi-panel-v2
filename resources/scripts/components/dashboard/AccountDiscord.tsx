@@ -11,9 +11,13 @@ const AccountDiscord = () => {
     const { data, mutate } = useDiscordLink({ revalidateOnMount: true });
     const [busy, setBusy] = useState(false);
 
-    // Nothing configured on the panel means there is no point showing a card
-    // whose only button leads to an error.
-    if (!data?.enabled) {
+    // Hide the card when there's nothing configured AND nothing linked - a
+    // "Link Discord" button that can only error is worse than no card.
+    //
+    // But if they *are* linked, always show it, even with the integration
+    // switched off. Otherwise turning Discord off in admin strands everyone who
+    // already linked with no way to disconnect.
+    if (!data || (!data.enabled && !data.linked)) {
         return null;
     }
 
@@ -47,10 +51,18 @@ const AccountDiscord = () => {
                                 Linked on {format(data.linkedAt, 'MMMM do, yyyy')}
                             </p>
                         )}
-                        <p className={'mt-3 text-xs text-neutral-500'}>
-                            You will get a DM if one of your servers is suspended, or if a large number of files are
-                            deleted at once.
-                        </p>
+                        {data.enabled ? (
+                            <p className={'mt-3 text-xs text-neutral-500'}>
+                                You will get a DM about security changes to your account, and about your servers being
+                                suspended, finishing installation, backup results, or a large number of files being
+                                deleted at once.
+                            </p>
+                        ) : (
+                            <p className={'mt-3 text-xs text-yellow-400'}>
+                                Discord notifications are currently turned off on this panel, so nothing will be sent.
+                                You can still unlink below.
+                            </p>
+                        )}
                         <div className={'mt-4'}>
                             <Button.Danger size={Button.Sizes.Small} disabled={busy} onClick={onUnlink}>
                                 Unlink Discord
