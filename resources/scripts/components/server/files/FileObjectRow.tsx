@@ -1,5 +1,4 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileAlt, faFileArchive, faFileImport, faFolder } from '@fortawesome/free-solid-svg-icons';
 import { encodePathSegments } from '@/helpers';
 import { differenceInHours, format, formatDistanceToNow } from 'date-fns';
 import React, { memo } from 'react';
@@ -13,6 +12,7 @@ import SelectFileCheckbox from '@/components/server/files/SelectFileCheckbox';
 import { usePermissions } from '@/plugins/usePermissions';
 import { join } from 'pathe';
 import { bytesToString } from '@/lib/formatters';
+import presentationFor from '@/components/server/files/fileIcons';
 import styles from './style.module.css';
 
 const Clickable: React.FC<{ file: FileObject }> = memo(({ file, children }) => {
@@ -34,37 +34,43 @@ const Clickable: React.FC<{ file: FileObject }> = memo(({ file, children }) => {
     );
 }, isEqual);
 
-const FileObjectRow = ({ file }: { file: FileObject }) => (
-    <div
-        className={styles.file_row}
-        key={file.name}
-        onContextMenu={(e) => {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent(`pterodactyl:files:ctx:${file.key}`, { detail: e.clientX }));
-        }}
-    >
-        <SelectFileCheckbox name={file.name} />
-        <Clickable file={file}>
-            <div css={tw`flex-none text-neutral-400 ml-6 mr-4 text-lg pl-3`}>
-                {file.isFile ? (
-                    <FontAwesomeIcon
-                        icon={file.isSymlink ? faFileImport : file.isArchiveType() ? faFileArchive : faFileAlt}
-                    />
-                ) : (
-                    <FontAwesomeIcon icon={faFolder} />
-                )}
-            </div>
-            <div css={tw`flex-1 truncate`}>{file.name}</div>
-            {file.isFile && <div css={tw`w-1/6 text-right mr-4 hidden sm:block`}>{bytesToString(file.size)}</div>}
-            <div css={tw`w-1/5 text-right mr-4 hidden md:block`} title={file.modifiedAt.toString()}>
-                {Math.abs(differenceInHours(file.modifiedAt, new Date())) > 48
-                    ? format(file.modifiedAt, 'MMM do, yyyy h:mma')
-                    : formatDistanceToNow(file.modifiedAt, { addSuffix: true })}
-            </div>
-        </Clickable>
-        <FileDropdownMenu file={file} />
-    </div>
-);
+const FileObjectRow = ({ file }: { file: FileObject }) => {
+    const { icon, color } = presentationFor(file);
+
+    return (
+        <div
+            className={styles.file_row}
+            key={file.name}
+            onContextMenu={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent(`pterodactyl:files:ctx:${file.key}`, { detail: e.clientX }));
+            }}
+        >
+            <SelectFileCheckbox name={file.name} />
+            <Clickable file={file}>
+                {/* ml-9 clears the selection checkbox, which is absolutely
+                    positioned over the start of the row and so takes up no
+                    width in the flex flow. */}
+                <div css={tw`flex-none w-5 ml-9 mr-3 text-base text-center`} style={{ color }}>
+                    <FontAwesomeIcon icon={icon} fixedWidth />
+                </div>
+                <div css={tw`flex-1 truncate`}>
+                    {file.name}
+                    {file.isSymlink && <span css={tw`ml-2 text-xs text-neutral-500`}>symlink</span>}
+                </div>
+                <div css={tw`w-24 text-right mr-6 hidden sm:block text-neutral-400 tabular-nums`}>
+                    {file.isFile ? bytesToString(file.size) : ''}
+                </div>
+                <div css={tw`w-44 text-right mr-4 hidden md:block text-neutral-400`} title={file.modifiedAt.toString()}>
+                    {Math.abs(differenceInHours(file.modifiedAt, new Date())) > 48
+                        ? format(file.modifiedAt, 'MMM do, yyyy h:mma')
+                        : formatDistanceToNow(file.modifiedAt, { addSuffix: true })}
+                </div>
+            </Clickable>
+            <FileDropdownMenu file={file} />
+        </div>
+    );
+};
 
 export default memo(FileObjectRow, (prevProps, nextProps) => {
     /* eslint-disable @typescript-eslint/no-unused-vars */
