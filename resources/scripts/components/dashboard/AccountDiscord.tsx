@@ -5,21 +5,24 @@ import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/components/elements/button/index';
 import { useDiscordLink, unlinkDiscord } from '@/api/account/discord';
 import { useFlashKey } from '@/plugins/useFlash';
+import { useStoreState } from 'easy-peasy';
+import { ApplicationStore } from '@/state';
 
 const AccountDiscord = () => {
     const { clearAndAddHttpError } = useFlashKey('account:discord');
     const { data, mutate } = useDiscordLink({ revalidateOnMount: true });
     const [busy, setBusy] = useState(false);
+    const rootAdmin = useStoreState((state: ApplicationStore) => state.user.data!.rootAdmin);
 
-    // Hide the card when there's nothing configured AND nothing linked - a
-    // "Link Discord" button that can only error is worse than no card.
-    //
-    // But if they *are* linked, always show it, even with the integration
-    // switched off. Otherwise turning Discord off in admin strands everyone who
-    // already linked with no way to disconnect.
-    if (!data || (!data.enabled && !data.linked)) {
+    // Only hidden while the first request is still in flight. Hiding it when
+    // the integration is unconfigured seemed tidy, but it means an admin who
+    // just built the feature loads the page, sees nothing, and assumes it is
+    // broken. Show the card and say what's missing instead.
+    if (!data) {
         return null;
     }
+
+    const unconfigured = !data.enabled && !data.linked;
 
     const onUnlink = () => {
         setBusy(true);
@@ -37,7 +40,29 @@ const AccountDiscord = () => {
             </div>
 
             <div className={'p-4'}>
-                {data.linked ? (
+                {unconfigured ? (
+                    <>
+                        <p className={'text-sm text-neutral-300'}>
+                            Discord linking has not been set up on this panel yet.
+                        </p>
+                        {rootAdmin ? (
+                            <p className={'mt-2 text-xs text-neutral-500'}>
+                                Add a client ID, client secret and bot token under{' '}
+                                <a
+                                    href={'/admin/settings/discord'}
+                                    className={'text-lumi-400 no-underline hover:underline'}
+                                >
+                                    Admin &rarr; Settings &rarr; Discord
+                                </a>
+                                , then reload this page.
+                            </p>
+                        ) : (
+                            <p className={'mt-2 text-xs text-neutral-500'}>
+                                Check back later — an administrator has to configure it first.
+                            </p>
+                        )}
+                    </>
+                ) : data.linked ? (
                     <>
                         <div className={'flex items-center gap-2'}>
                             <span className={'h-2 w-2 flex-shrink-0 rounded-full bg-green-500'} />
