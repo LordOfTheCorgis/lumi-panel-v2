@@ -5,6 +5,9 @@ import { Highlighter } from '@/lib/editor/highlighter';
 import { LanguageSpec } from '@/lib/editor/tokenizer';
 import { plaintext } from '@/lib/editor/languages';
 import theme from '@/lib/editor/theme';
+import { SearchOptions, compile, expandReplacement, findAll, nextIndex } from '@/lib/editor/search';
+import { useEditorSettings } from '@/lib/editor/settings';
+import EditorSearchPanel from '@/components/elements/editor/EditorSearchPanel';
 import {
     Direction,
     Granularity,
@@ -22,7 +25,6 @@ export interface LumiEditorProps {
     initialValue?: string;
     language?: LanguageSpec;
     readOnly?: boolean;
-    tabSize?: number;
     /** Called on every change; the container uses this for draft saving. */
     onChange?: (value: string) => void;
     onSave?: () => void;
@@ -32,7 +34,9 @@ export interface LumiEditorProps {
     style?: React.CSSProperties;
 }
 
-const LINE_HEIGHT = 20;
+// Line height tracks the configured font size; 1.55 keeps descenders clear
+// without the lines drifting apart.
+const lineHeightFor = (fontSize: number) => Math.round(fontSize * 1.55);
 const OVERSCAN = 8;
 const GUTTER_PADDING = 16;
 
@@ -53,7 +57,6 @@ const LumiEditor = ({
     initialValue = '',
     language = plaintext,
     readOnly = false,
-    tabSize = 4,
     onChange,
     onSave,
     registerAccessor,
@@ -79,6 +82,15 @@ const LumiEditor = ({
     const [charWidth, setCharWidth] = useState(8);
 
     const dragging = useRef(false);
+
+    const [settings] = useEditorSettings();
+    const LINE_HEIGHT = lineHeightFor(settings.fontSize);
+
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [replacement, setReplacement] = useState('');
+    const [searchOptions, setSearchOptions] = useState<SearchOptions>({});
+    const [matchIndex, setMatchIndex] = useState(0);
 
     // Measure the monospace advance once. Hardcoding it looks fine until
     // someone's browser substitutes a different font and every caret is wrong.
@@ -122,8 +134,8 @@ const LumiEditor = ({
     });
 
     const gutterWidth = useMemo(
-        () => String(doc.current.lineCount).length * charWidth + GUTTER_PADDING * 2,
-        [version, charWidth]
+        () => (settings.lineNumbers ? String(doc.current.lineCount).length * charWidth + GUTTER_PADDING * 2 : 8),
+        [version, charWidth, settings.lineNumbers]
     );
 
     /** Applies an edit, records it for undo, and moves the caret. */
@@ -167,9 +179,82 @@ const LumiEditor = ({
         [onChange]
     );
 
+    // Recomputed whenever the document version or the query changes. Cheap
+    // enough at config-file sizes that memoising on version is sufficient.
+    const matches = useMemo(
+        () => (searchOpen ? findAll(doc.current, query, searchOptions) : []),
+        [searchOpen, query, searchOptions, version]
+    );
+
+    // A half-typed regex compiles to null; that is a bad pattern rather than
+    // simply no results, and the panel says so.
+    const invalidQuery = searchOpen && query.length > 0 && compile(query, searchOptions) === null;
+
+    const goToMatch = useCallback(
+        (index: number) => {
+            const match = matches[index];
+            if (!match) return;
+
+            setMatchIndex(index);
+            setSelection({ anchor: match.from, head: match.to });
+        },
+        [matches]
+    );
+
+    const step = useCallback(
+        (backwards: boolean) => {
+            if (matches.length === 0) return;
+
+            const from = backwards ? selection.head : selection.head;
+            const index = nextIndex(matches, from, backwards);
+
+            goToMatch(index);
+        },
+        [matches, selection.head, goToMatch]
+    );
+
+    const replaceCurrent = useCallback(() => {
+        const match = matches[Math.min(matchIndex, matches.length - 1)];
+        if (!match || readOnly) return;
+
+        const text = doc.current.getRange(match);
+        edit(match.from, match.to, expandReplacement(replacement, text, query, searchOptions), false);
+    }, [matches, matchIndex, readOnly, replacement, query, searchOptions, edit]);
+
+    const replaceAll = useCallback(() => {
+        if (matches.length === 0 || readOnly) return;
+
+        // Applied bottom-up so each replacement cannot shift the coordinates of
+        // the ones still to come.
+        const before = selection.head;
+        for (let i = matches.length - 1; i >= 0; i--) {
+            const text = doc.current.getRange(matches[i]);
+            doc.current.replaceRange(matches[i], expandReplacement(replacement, text, query, searchOptions));
+        }
+
+        history.current.clear();
+        highlighter.current.invalidateAll();
+        highlighter.current.update(doc.current, 0);
+        setSelection(collapsed(doc.current.clamp(before)));
+        setVersion((v) => v + 1);
+        onChange?.(doc.current.getText());
+    }, [matches, readOnly, replacement, query, searchOptions, selection.head, onChange]);
+
     const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const mod = event.ctrlKey || event.metaKey;
         const range = toRange(selection);
+
+        if (mod && (event.key.toLowerCase() === 'f' || (event.key.toLowerCase() === 'h' && !readOnly))) {
+            event.preventDefault();
+            setSearchOpen(true);
+            return;
+        }
+
+        if (event.key === 'Escape' && searchOpen) {
+            event.preventDefault();
+            setSearchOpen(false);
+            return;
+        }
 
         if (mod && event.key.toLowerCase() === 's') {
             event.preventDefault();
@@ -239,7 +324,7 @@ const LumiEditor = ({
 
         if (event.key === 'Tab') {
             event.preventDefault();
-            edit(range.from, range.to, ' '.repeat(tabSize), false);
+            edit(range.from, range.to, ' '.repeat(settings.tabSize), false);
             return;
         }
 
@@ -422,21 +507,26 @@ const LumiEditor = ({
                     right: 0,
                     height: LINE_HEIGHT,
                     lineHeight: `${LINE_HEIGHT}px`,
-                    background: index === selection.head.line && isEmpty(selection) ? theme.activeLine : undefined,
+                    background:
+                        settings.highlightActiveLine && index === selection.head.line && isEmpty(selection)
+                            ? theme.activeLine
+                            : undefined,
                 }}
             >
-                <span
-                    style={{
-                        position: 'absolute',
-                        left: 0,
-                        width: gutterWidth - GUTTER_PADDING,
-                        textAlign: 'right',
-                        color: index === selection.head.line ? theme.gutterActive : theme.gutter,
-                        userSelect: 'none',
-                    }}
-                >
-                    {index + 1}
-                </span>
+                {settings.lineNumbers && (
+                    <span
+                        style={{
+                            position: 'absolute',
+                            left: 0,
+                            width: gutterWidth - GUTTER_PADDING,
+                            textAlign: 'right',
+                            color: index === selection.head.line ? theme.gutterActive : theme.gutter,
+                            userSelect: 'none',
+                        }}
+                    >
+                        {index + 1}
+                    </span>
+                )}
                 <span style={{ position: 'absolute', left: gutterWidth, whiteSpace: 'pre' }}>
                     {highlight}
                     <span style={{ position: 'relative' }}>{nodes}</span>
@@ -461,7 +551,7 @@ const LumiEditor = ({
                 background: theme.background,
                 color: theme.foreground,
                 fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Consolas, monospace',
-                fontSize: 13,
+                fontSize: settings.fontSize,
                 ...style,
             }}
         >
@@ -473,6 +563,31 @@ const LumiEditor = ({
             >
                 {'0'.repeat(50)}
             </span>
+
+            {searchOpen && (
+                <EditorSearchPanel
+                    query={query}
+                    replacement={replacement}
+                    options={searchOptions}
+                    matchCount={matches.length}
+                    currentMatch={Math.min(matchIndex, Math.max(matches.length - 1, 0))}
+                    invalid={invalidQuery}
+                    readOnly={readOnly}
+                    onQueryChange={(value) => {
+                        setQuery(value);
+                        setMatchIndex(0);
+                    }}
+                    onReplacementChange={setReplacement}
+                    onOptionsChange={(patch) => setSearchOptions((current) => ({ ...current, ...patch }))}
+                    onStep={step}
+                    onReplace={replaceCurrent}
+                    onReplaceAll={replaceAll}
+                    onClose={() => {
+                        setSearchOpen(false);
+                        input.current?.focus();
+                    }}
+                />
+            )}
 
             <div
                 ref={scroller}
