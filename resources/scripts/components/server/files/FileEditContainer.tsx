@@ -14,6 +14,8 @@ import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
 import Select from '@/components/elements/Select';
 import { languageById, languageForFilename, sortedLanguages } from '@/lib/editor/languages';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCompress, faExpand } from '@fortawesome/free-solid-svg-icons';
 import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
@@ -31,6 +33,7 @@ export default () => {
     const [modalVisible, setModalVisible] = useState(false);
     // null means "follow the filename"; picking from the dropdown pins it.
     const [languageId, setLanguageId] = useState<string | null>(null);
+    const [fullscreen, setFullscreen] = useState(false);
 
     const history = useHistory();
     const { hash } = useLocation();
@@ -65,6 +68,24 @@ export default () => {
     useEffect(() => {
         setDirectory(directory);
     }, [directory, setDirectory]);
+
+    // Bound on the window rather than the editor: focus sits inside the
+    // editor's own textarea, which handles and stops its own key events.
+    useEffect(() => {
+        if (!fullscreen) return;
+
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFullscreen(false);
+        };
+
+        window.addEventListener('keydown', onKey);
+        document.body.classList.add('overflow-hidden');
+
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            document.body.classList.remove('overflow-hidden');
+        };
+    }, [fullscreen]);
 
     useEffect(() => {
         if (!draftKey) return;
@@ -126,74 +147,101 @@ export default () => {
 
     return (
         <PageContentBlock>
-            <FlashMessageRender byKey={'files:view'} css={tw`mb-4`} />
-            <ErrorBoundary>
-                <div css={tw`mb-4`}>
-                    <FileManagerBreadcrumbs withinFileEditor isNewFile={action !== 'edit'} />
+            <div className={fullscreen ? 'fixed inset-0 z-50 flex flex-col bg-neutral-900 p-4' : 'flex flex-col'}>
+                <FlashMessageRender byKey={'files:view'} css={tw`mb-3`} />
+
+                {/* One toolbar instead of a breadcrumb row above and a controls
+                    row below. That row alone was costing the editor ~60px of
+                    height on every screen. */}
+                <div css={tw`mb-3 flex flex-wrap items-center gap-3`}>
+                    {!fullscreen && (
+                        <ErrorBoundary>
+                            <div css={tw`min-w-0 flex-1`}>
+                                <FileManagerBreadcrumbs withinFileEditor isNewFile={action !== 'edit'} />
+                            </div>
+                        </ErrorBoundary>
+                    )}
+
+                    <div css={tw`ml-auto flex items-center gap-3`}>
+                        <div css={tw`rounded bg-neutral-900`}>
+                            <Select value={language.id} onChange={(e) => setLanguageId(e.currentTarget.value)}>
+                                {sortedLanguages().map((option) => (
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
+                                ))}
+                            </Select>
+                        </div>
+
+                        <button
+                            type={'button'}
+                            onClick={() => setFullscreen((value) => !value)}
+                            title={fullscreen ? 'Exit full screen (Esc)' : 'Full screen'}
+                            aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}
+                            css={tw`rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-sm text-neutral-300 transition-colors duration-150 hover:border-neutral-500 hover:text-neutral-100`}
+                        >
+                            <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} />
+                        </button>
+
+                        {action === 'edit' ? (
+                            <Can action={'file.update'}>
+                                <Button onClick={() => save()}>Save Content</Button>
+                            </Can>
+                        ) : (
+                            <Can action={'file.create'}>
+                                <Button onClick={() => setModalVisible(true)}>Create File</Button>
+                            </Can>
+                        )}
+                    </div>
                 </div>
-            </ErrorBoundary>
-            {hash.replace(/^#/, '').endsWith('.pteroignore') && (
-                <div css={tw`mb-4 p-4 border-l-4 bg-neutral-900 rounded border-cyan-400`}>
-                    <p css={tw`text-neutral-300 text-sm`}>
-                        You&apos;re editing a <code css={tw`font-mono bg-black rounded py-px px-1`}>.pteroignore</code>{' '}
-                        file. Any files or directories listed in here will be excluded from backups. Wildcards are
-                        supported by using an asterisk (<code css={tw`font-mono bg-black rounded py-px px-1`}>*</code>).
-                        You can negate a prior rule by prepending an exclamation point (
-                        <code css={tw`font-mono bg-black rounded py-px px-1`}>!</code>).
-                    </p>
-                </div>
-            )}
-            <FileNameModal
-                visible={modalVisible}
-                onDismissed={() => setModalVisible(false)}
-                onFileNamed={(name) => {
-                    setModalVisible(false);
-                    save(name);
-                }}
-            />
-            <div css={tw`relative`}>
-                <SpinnerOverlay visible={loading} />
-                <LumiEditor
-                    language={language}
-                    initialValue={content}
-                    style={{ minHeight: '16rem', height: 'calc(100vh - 20rem)' }}
-                    className={'rounded-lg border border-neutral-600 overflow-hidden'}
-                    registerAccessor={(get) => {
-                        fetchFileContent = () => Promise.resolve(get());
-                    }}
-                    onSave={() => {
-                        if (action !== 'edit') {
-                            setModalVisible(true);
-                        } else {
-                            save();
-                        }
-                    }}
-                    onChange={action === 'new' ? saveDraft : undefined}
-                />
-            </div>
-            <div css={tw`flex justify-end mt-4`}>
-                <div css={tw`flex-1 sm:flex-none rounded bg-neutral-900 mr-4`}>
-                    <Select value={language.id} onChange={(e) => setLanguageId(e.currentTarget.value)}>
-                        {sortedLanguages().map((option) => (
-                            <option key={option.id} value={option.id}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
-                {action === 'edit' ? (
-                    <Can action={'file.update'}>
-                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => save()}>
-                            Save Content
-                        </Button>
-                    </Can>
-                ) : (
-                    <Can action={'file.create'}>
-                        <Button css={tw`flex-1 sm:flex-none`} onClick={() => setModalVisible(true)}>
-                            Create File
-                        </Button>
-                    </Can>
+
+                {hash.replace(/^#/, '').endsWith('.pteroignore') && !fullscreen && (
+                    <div css={tw`mb-3 rounded-md border-l-4 border-primary-500 bg-neutral-800 p-3`}>
+                        <p css={tw`text-neutral-300 text-sm`}>
+                            You&apos;re editing a{' '}
+                            <code css={tw`font-mono bg-black rounded py-px px-1`}>.pteroignore</code> file. Anything
+                            listed here is excluded from backups. Wildcards work with an asterisk (
+                            <code css={tw`font-mono bg-black rounded py-px px-1`}>*</code>), and a rule can be negated
+                            with an exclamation point (<code css={tw`font-mono bg-black rounded py-px px-1`}>!</code>).
+                        </p>
+                    </div>
                 )}
+
+                <FileNameModal
+                    visible={modalVisible}
+                    onDismissed={() => setModalVisible(false)}
+                    onFileNamed={(name) => {
+                        setModalVisible(false);
+                        save(name);
+                    }}
+                />
+
+                <div css={fullscreen ? tw`relative flex-1 min-h-0` : tw`relative`}>
+                    <SpinnerOverlay visible={loading} />
+                    <LumiEditor
+                        language={language}
+                        initialValue={content}
+                        style={
+                            fullscreen
+                                ? { height: '100%' }
+                                : // Was 20rem. The toolbar merge gave most of
+                                  // that back, so the editor can have it.
+                                  { minHeight: '20rem', height: 'calc(100vh - 13rem)' }
+                        }
+                        className={'rounded-lg border border-neutral-600 overflow-hidden'}
+                        registerAccessor={(get) => {
+                            fetchFileContent = () => Promise.resolve(get());
+                        }}
+                        onSave={() => {
+                            if (action !== 'edit') {
+                                setModalVisible(true);
+                            } else {
+                                save();
+                            }
+                        }}
+                        onChange={action === 'new' ? saveDraft : undefined}
+                    />
+                </div>
             </div>
         </PageContentBlock>
     );
