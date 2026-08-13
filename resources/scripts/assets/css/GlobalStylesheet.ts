@@ -16,8 +16,9 @@ export default createGlobalStyle`
     /* Caret blink for the editor. Defined globally because the caret is drawn
        with an inline style and cannot carry its own keyframes. */
     @keyframes lumi-editor-blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
+        0%, 45% { opacity: 1; }
+        55%, 95% { opacity: 0.15; }
+        100% { opacity: 1; }
     }
 
     body {

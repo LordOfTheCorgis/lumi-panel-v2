@@ -4,7 +4,8 @@ import { History } from '@/lib/editor/history';
 import { Highlighter } from '@/lib/editor/highlighter';
 import { LanguageSpec } from '@/lib/editor/tokenizer';
 import { plaintext } from '@/lib/editor/languages';
-import theme from '@/lib/editor/theme';
+import theme, { EDITOR_FONT_STACK } from '@/lib/editor/theme';
+import { guideColumns, indentWidths, matchBracket } from '@/lib/editor/structure';
 import { SearchOptions, compile, expandReplacement, findAll, nextIndex } from '@/lib/editor/search';
 import { useEditorSettings } from '@/lib/editor/settings';
 import EditorSearchPanel from '@/components/elements/editor/EditorSearchPanel';
@@ -92,6 +93,19 @@ const LumiEditor = ({
     const [searchOptions, setSearchOptions] = useState<SearchOptions>({});
     const [matchIndex, setMatchIndex] = useState(0);
 
+    // A caret that blinks while you are typing reads as lag. Suppress it for a
+    // beat after every keystroke and let it resume once you pause.
+    const [typing, setTyping] = useState(false);
+    const typingTimer = useRef<ReturnType<typeof setTimeout>>();
+
+    const markTyping = useCallback(() => {
+        setTyping(true);
+        clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setTyping(false), 550);
+    }, []);
+
+    useEffect(() => () => clearTimeout(typingTimer.current), []);
+
     // Measure the monospace advance once. Hardcoding it looks fine until
     // someone's browser substitutes a different font and every caret is wrong.
     useLayoutEffect(() => {
@@ -143,6 +157,8 @@ const LumiEditor = ({
         (from: Position, to: Position, text: string, coalesce = true) => {
             if (readOnly) return;
 
+            markTyping();
+
             const before = selection.head;
             const change = doc.current.replaceRange({ from, to }, text);
 
@@ -153,7 +169,7 @@ const LumiEditor = ({
             setVersion((v) => v + 1);
             onChange?.(doc.current.getText());
         },
-        [readOnly, selection.head, onChange]
+        [readOnly, selection.head, onChange, markTyping]
     );
 
     const insert = useCallback(
@@ -446,6 +462,18 @@ const LumiEditor = ({
         }
     }, [selection.head.line, selection.head.ch]);
 
+    // Recomputed on document change only; indentation does not move when the
+    // caret does.
+    const indents = useMemo(() => indentWidths(doc.current.getLines(), settings.tabSize), [version, settings.tabSize]);
+
+    // The guide for the block the caret sits in.
+    const activeGuide = Math.max(0, (indents[selection.head.line] ?? 0) - settings.tabSize);
+
+    const brackets = useMemo(
+        () => (isEmpty(selection) ? matchBracket(doc.current, selection.head) : null),
+        [version, selection.head.line, selection.head.ch, selection.anchor.line, selection.anchor.ch]
+    );
+
     const lineCount = doc.current.lineCount;
     const first = Math.max(0, Math.floor(scrollTop / LINE_HEIGHT) - OVERSCAN);
     const last = Math.min(lineCount, Math.ceil((scrollTop + viewportHeight) / LINE_HEIGHT) + OVERSCAN);
@@ -491,10 +519,50 @@ const LumiEditor = ({
                         width: Math.max(end - start, 0) * charWidth,
                         top: 0,
                         height: LINE_HEIGHT,
-                        background: theme.selection,
+                        background: focused ? theme.selection : theme.selectionBlurred,
                     }}
                 />
             );
+        }
+
+        // Indent guides, drawn behind everything else on the line. The guide
+        // belonging to the block the caret is in is brightened, so you can see
+        // your scope without counting spaces.
+        const guides = guideColumns(indents[index] ?? 0, settings.tabSize).map((column) => (
+            <span
+                key={`guide-${column}`}
+                style={{
+                    position: 'absolute',
+                    left: gutterWidth + column * charWidth,
+                    top: 0,
+                    width: 1,
+                    height: LINE_HEIGHT,
+                    background: column === activeGuide ? theme.indentGuideActive : theme.indentGuide,
+                }}
+            />
+        ));
+
+        // Matching bracket pair.
+        const bracketMarks: React.ReactNode[] = [];
+        if (brackets) {
+            for (const mark of [brackets.open, brackets.close]) {
+                if (mark.line === index) {
+                    bracketMarks.push(
+                        <span
+                            key={`bracket-${mark.ch}`}
+                            style={{
+                                position: 'absolute',
+                                left: gutterWidth + mark.ch * charWidth,
+                                top: 0,
+                                width: charWidth,
+                                height: LINE_HEIGHT,
+                                background: theme.matchingBracket,
+                                borderRadius: 2,
+                            }}
+                        />
+                    );
+                }
+            }
         }
 
         return (
@@ -513,6 +581,20 @@ const LumiEditor = ({
                             : undefined,
                 }}
             >
+                {settings.highlightActiveLine && index === selection.head.line && isEmpty(selection) && (
+                    <span
+                        style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            width: 2,
+                            height: LINE_HEIGHT,
+                            background: theme.activeLineAccent,
+                        }}
+                    />
+                )}
+                {guides}
+                {bracketMarks}
                 {settings.lineNumbers && (
                     <span
                         style={{
@@ -550,7 +632,9 @@ const LumiEditor = ({
                 position: 'relative',
                 background: theme.background,
                 color: theme.foreground,
-                fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Consolas, monospace',
+                fontFamily: EDITOR_FONT_STACK,
+                // Ligatures where the font offers them; -> and => read far better.
+                fontVariantLigatures: 'contextual',
                 fontSize: settings.fontSize,
                 ...style,
             }}
@@ -593,7 +677,14 @@ const LumiEditor = ({
                 ref={scroller}
                 onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
                 onMouseDown={onMouseDown}
-                style={{ position: 'absolute', inset: 0, overflow: 'auto', cursor: 'text' }}
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    overflow: 'auto',
+                    cursor: 'text',
+                    // Smooth the jump when the caret scrolls itself in.
+                    scrollBehavior: 'smooth',
+                }}
             >
                 <div style={{ position: 'relative', height: lineCount * LINE_HEIGHT, minWidth: '100%' }}>
                     {visible}
@@ -602,12 +693,22 @@ const LumiEditor = ({
                         <span
                             style={{
                                 position: 'absolute',
-                                left: caretLeft,
-                                top: caretTop,
+                                // Positioned by transform rather than left/top
+                                // so the browser can move it on the compositor;
+                                // animating left forces layout on every frame.
+                                left: 0,
+                                top: 0,
+                                transform: `translate(${caretLeft}px, ${caretTop}px)`,
+                                transition: 'transform 55ms cubic-bezier(0.2, 0, 0, 1)',
                                 width: 2,
                                 height: LINE_HEIGHT,
                                 background: theme.caret,
-                                animation: 'lumi-editor-blink 1s step-end infinite',
+                                borderRadius: 1,
+                                boxShadow: `0 0 6px ${theme.caretGlow}`,
+                                // Solid while typing; a caret that blinks
+                                // mid-keystroke reads as lag.
+                                animation: typing ? 'none' : 'lumi-editor-blink 1.1s ease-in-out infinite',
+                                willChange: 'transform',
                             }}
                         />
                     )}
