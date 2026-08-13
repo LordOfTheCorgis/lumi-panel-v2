@@ -20,7 +20,10 @@ const TitledGreyBox = ({ icon, title, children, className }: Props) => (
                     {title}
                 </p>
             ) : (
-                title
+                // A custom title is a flex child here, so it collapses to its
+                // content unless told to fill. That is what squashed the
+                // select-all checkbox against the label on the subuser form.
+                <div css={tw`flex-1 min-w-0`}>{title}</div>
             )}
         </div>
         <div css={tw`p-4`}>{children}</div>
