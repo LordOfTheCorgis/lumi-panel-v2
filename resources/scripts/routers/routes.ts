@@ -56,8 +56,8 @@ interface ServerRouteDefinition extends RouteDefinition {
     // Sidebar grouping. Routes render under this heading, in the order the
     // groups first appear in this file.
     group?: string;
-    // Restricts this route to servers whose egg exposes the TXADMIN_PORT variable, the
-    // same heuristic used to identify FiveM-capable eggs elsewhere in the panel.
+    // Restricts this route to servers whose egg exposes FIVEM_LICENSE - the single
+    // definition of "this is a FiveM server", shared with the startup page.
     requiresFiveM?: boolean;
 }
 

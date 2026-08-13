@@ -36,9 +36,8 @@ const StartupContainer = () => {
         dockerImages: { [variables.dockerImage]: variables.dockerImage },
     });
 
-    // Keyed off FIVEM_LICENSE rather than the TXADMIN_PORT check the router
-    // uses, because this notice is specifically about the txAdmin data-location
-    // step and every FiveM egg carries the licence key.
+    // FIVEM_LICENSE is the panel's one test for "this is a FiveM server"; the
+    // server router gates the Players tab on the same variable.
     const isFiveM = (data?.variables ?? variables.variables).some((v) => v.envVariable === 'FIVEM_LICENSE');
 
     const setServerFromState = ServerContext.useStoreActions((actions) => actions.server.setServerFromState);

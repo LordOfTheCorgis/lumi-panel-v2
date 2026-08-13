@@ -30,7 +30,11 @@ export default () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
     const isFiveM = ServerContext.useStoreState(
-        (state) => state.server.data?.variables.some((v) => v.envVariable === 'TXADMIN_PORT') ?? false
+        // Was TXADMIN_PORT, which no current FiveM egg defines - the variable is
+        // TXHOST_TXA_PORT now, so this was always false and the Players tab never
+        // appeared. FIVEM_LICENSE is on every FiveM egg whether or not txAdmin is
+        // enabled, and matches what the startup page keys off.
+        (state) => state.server.data?.variables.some((v) => v.envVariable === 'FIVEM_LICENSE') ?? false
     );
     const inConflictState = ServerContext.useStoreState((state) => state.server.inConflictState);
     const serverId = ServerContext.useStoreState((state) => state.server.data?.internalId);
