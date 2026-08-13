@@ -4,6 +4,7 @@ import Can from '@/components/elements/Can';
 import { ServerContext } from '@/state/server';
 import { PowerAction } from '@/components/server/console/ServerConsoleContainer';
 import { Dialog } from '@/components/elements/dialog';
+import TxAdminButton from '@/components/server/console/TxAdminButton';
 
 interface PowerButtonProps {
     className?: string;
@@ -71,6 +72,8 @@ export default ({ className }: PowerButtonProps) => {
                     {killable ? 'Kill' : 'Stop'}
                 </Button.Danger>
             </Can>
+            {/* Renders nothing unless the egg has txAdmin enabled. */}
+            <TxAdminButton className={'flex-1'} />
         </div>
     );
 };
