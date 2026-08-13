@@ -14,6 +14,8 @@ import ModalContext from '@/context/ModalContext';
 import asModal from '@/hoc/asModal';
 import Switch from '@/components/elements/Switch';
 import ScheduleCheatsheetCards from '@/components/server/schedules/ScheduleCheatsheetCards';
+import SchedulePresets from '@/components/server/schedules/SchedulePresets';
+import CronSummary from '@/components/server/schedules/CronSummary';
 
 interface Props {
     schedule?: Schedule;
@@ -88,7 +90,7 @@ const EditScheduleModal = ({ schedule }: Props) => {
                 } as Values
             }
         >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, values, setValues }) => (
                 <Form>
                     <h3 css={tw`text-2xl mb-6`}>{schedule ? 'Edit schedule' : 'Create new schedule'}</h3>
                     <FlashMessageRender byKey={'schedule:edit'} css={tw`mb-6`} />
@@ -97,7 +99,15 @@ const EditScheduleModal = ({ schedule }: Props) => {
                         label={'Schedule name'}
                         description={'A human readable identifier for this schedule.'}
                     />
-                    <div css={tw`grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6`}>
+
+                    <div css={tw`mt-6`}>
+                        <p css={tw`text-sm font-medium text-neutral-300 mb-2`}>When should this run?</p>
+                        <SchedulePresets current={values} onSelect={(cron) => setValues({ ...values, ...cron })} />
+                    </div>
+
+                    <CronSummary cron={values} />
+
+                    <div css={tw`grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4`}>
                         <Field name={'minute'} label={'Minute'} />
                         <Field name={'hour'} label={'Hour'} />
                         <Field name={'dayOfMonth'} label={'Day of month'} />
@@ -105,8 +115,8 @@ const EditScheduleModal = ({ schedule }: Props) => {
                         <Field name={'dayOfWeek'} label={'Day of week'} />
                     </div>
                     <p css={tw`text-neutral-400 text-xs mt-2`}>
-                        The schedule system supports the use of Cronjob syntax when defining when tasks should begin
-                        running. Use the fields above to specify when these tasks should begin running.
+                        Pick a preset above, or set the fields directly using standard cron syntax. The summary updates
+                        as you type.
                     </p>
                     <div css={tw`mt-6 bg-neutral-700 border border-neutral-800 shadow-inner p-4 rounded`}>
                         <Switch
