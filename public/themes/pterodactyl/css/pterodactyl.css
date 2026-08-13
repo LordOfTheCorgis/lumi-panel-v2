@@ -903,3 +903,238 @@ pre {
 .progress-bar-blue {
     background-color: #ed5e5e;
 }
+
+/* *******
+ * Admin revamp. AdminLTE 2 on Bootstrap 3 is what it is, but almost all of
+ * what makes it feel old is chrome: hard corners, cramped tables, 2013-era
+ * form controls. This layer sits on top of the vendor CSS and fixes that
+ * without touching a single Blade view.
+ ******* */
+
+.content-header > h1 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.content-header > h1 > small {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #8a8a8a;
+}
+
+.content-header > .breadcrumb {
+    background: transparent;
+    font-size: 12px;
+    padding: 0;
+    top: 22px;
+}
+
+.lumi-logo-mark {
+    height: 22px;
+    width: 22px;
+    margin-right: 8px;
+    vertical-align: -5px;
+}
+
+/* Cards ------------------------------------------------------------------ */
+
+.box {
+    border-radius: 8px;
+    border: 1px solid #262626;
+    border-top: 1px solid #262626;
+    box-shadow: none !important;
+    margin-bottom: 20px;
+}
+
+/* AdminLTE marks card intent with a thick coloured top border. Keep the
+   signal, lose the slab: 2px and tucked inside the rounded corner. */
+.box.box-primary { border-top: 2px solid #ed5e5e; }
+.box.box-success { border-top: 2px solid #23a84a; }
+.box.box-danger  { border-top: 2px solid #c92a2a; }
+.box.box-warning { border-top: 2px solid #c87f0a; }
+.box.box-info    { border-top: 2px solid #1055a5; }
+
+.box-header.with-border {
+    border-bottom: 1px solid #262626;
+    padding: 14px 18px;
+}
+
+.box-header .box-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.box-body,
+.box-footer {
+    padding: 18px;
+}
+
+.box-footer {
+    border-top: 1px solid #262626;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Tables ----------------------------------------------------------------- */
+
+.table > thead > tr > th {
+    border-bottom: 1px solid #262626 !important;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    padding: 10px 12px;
+}
+
+.table > tbody > tr > td {
+    border-top: 1px solid #1f1f1f !important;
+    padding: 11px 12px;
+    vertical-align: middle;
+}
+
+.table-hover > tbody > tr {
+    transition: background-color 100ms ease;
+}
+
+/* Forms ------------------------------------------------------------------ */
+
+.form-control {
+    border-radius: 6px;
+    height: auto;
+    padding: 8px 12px;
+    box-shadow: none;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.form-control:focus {
+    border-color: #ed5e5e;
+    box-shadow: 0 0 0 3px rgba(237, 94, 94, 0.2);
+}
+
+.control-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+}
+
+.form-group > div > .text-muted small,
+.form-group .text-muted small {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Buttons ---------------------------------------------------------------- */
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 7px 14px;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.btn-sm {
+    padding: 5px 11px;
+}
+
+.btn-default {
+    background-color: #1f1f1f;
+    border-color: #262626;
+    color: #d1d1d1;
+}
+
+.btn-default:hover,
+.btn-default:focus {
+    background-color: #262626;
+    border-color: #333333;
+    color: #ffffff;
+}
+
+/* Sidebar ---------------------------------------------------------------- */
+
+.skin-blue .sidebar-menu > li.header {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 16px 20px 8px;
+}
+
+.skin-blue .sidebar-menu > li > a {
+    padding: 10px 18px;
+    font-size: 14px;
+    transition: background-color 100ms ease, color 100ms ease;
+}
+
+.skin-blue .sidebar-menu > li > a > i {
+    width: 22px;
+}
+
+/* Labels and badges ------------------------------------------------------ */
+
+.label {
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 4px 9px;
+}
+
+/* Overview stat tiles ---------------------------------------------------- */
+
+.lumi-stat-row {
+    margin-bottom: 4px;
+}
+
+.lumi-stat {
+    display: block;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    background: #171717;
+    text-decoration: none !important;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.lumi-stat:hover {
+    border-color: #3d3d3d;
+    background: #1c1c1c;
+}
+
+.lumi-stat-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+}
+
+.lumi-stat-label > i {
+    margin-right: 6px;
+}
+
+.lumi-stat-value {
+    display: block;
+    margin-top: 6px;
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #f7f7f7;
+}
+
+.lumi-stat-detail {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6e6e6e;
+}
+
+.lumi-stat-warn {
+    color: #c87f0a;
+}
+
+.lumi-quick-links .btn {
+    margin-bottom: 8px;
+}

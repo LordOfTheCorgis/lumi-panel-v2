@@ -39,6 +39,7 @@
         <div class="wrapper">
             <header class="main-header">
                 <a href="{{ route('index') }}" class="logo">
+                    <img src="/assets/svgs/logo.png" alt="" class="lumi-logo-mark" onerror="this.style.display='none'">
                     <span>{{ config('app.name', 'Pterodactyl') }}</span>
                 </a>
                 <nav class="navbar navbar-static-top">
