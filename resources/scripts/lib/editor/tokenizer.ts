@@ -176,14 +176,9 @@ export const tokenizeLine = (
             continue;
         }
 
-        // Line comment: everything to end of line.
-        const lineComment = spec.lineComment?.find((token) => line.startsWith(token, pos));
-        if (lineComment) {
-            push('comment', pos, line.length);
-            break;
-        }
-
-        // Block comment.
+        // Block comments are checked first because a line comment token can be
+        // a prefix of a block comment opener. Lua is the case that matters:
+        // "--" would eat "--[[" and swallow the rest of the block as one line.
         if (spec.blockComment && line.startsWith(spec.blockComment[0], pos)) {
             const close = line.indexOf(spec.blockComment[1], pos + spec.blockComment[0].length);
 
@@ -197,6 +192,12 @@ export const tokenizeLine = (
             push('comment', pos, end);
             pos = end;
             continue;
+        }
+
+        // Line comment: everything to end of line.
+        if (spec.lineComment?.some((token) => line.startsWith(token, pos))) {
+            push('comment', pos, line.length);
+            break;
         }
 
         // Multiline string. Checked before ordinary quotes so """ beats ".

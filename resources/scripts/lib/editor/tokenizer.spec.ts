@@ -49,6 +49,23 @@ describe('lib/editor/tokenizer.ts', () => {
             expect(state.inBlockComment).toBe(false);
         });
 
+        it('prefers a block comment opener over a line comment that prefixes it', () => {
+            // Lua: "--" is the line comment and "--[[" opens a block. Checking
+            // line comments first made "--[[" eat the rest of the line and the
+            // block never opened.
+            const lua: LanguageSpec = {
+                id: 'lua',
+                name: 'Lua',
+                extensions: ['lua'],
+                lineComment: ['--'],
+                blockComment: ['--[[', ']]'],
+            };
+
+            const { state } = tokenizeLine(lua, '--[[ block opens here');
+
+            expect(state.inBlockComment).toBe(true);
+        });
+
         it('carries an unterminated block comment to the next line', () => {
             const first = tokenizeLine(js, 'a /* start');
 
