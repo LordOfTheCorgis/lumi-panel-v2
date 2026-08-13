@@ -13,13 +13,13 @@ import { ServerError } from '@/components/elements/ScreenBlock';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
 import Select from '@/components/elements/Select';
-import modes from '@/modes';
+import { languageById, languageForFilename, sortedLanguages } from '@/lib/editor/languages';
 import useFlash from '@/plugins/useFlash';
 import { ServerContext } from '@/state/server';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
 import { encodePathSegments, hashToPath } from '@/helpers';
 import { dirname } from 'pathe';
-import CodemirrorEditor from '@/components/elements/CodemirrorEditor';
+import LumiEditor from '@/components/elements/editor/LumiEditor';
 
 const getNewFileDraftKey = (uuid: string, directory: string) => `pterodactyl:new-file:${uuid}:${directory}`;
 
@@ -29,7 +29,8 @@ export default () => {
     const [loading, setLoading] = useState(action === 'edit');
     const [content, setContent] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
-    const [mode, setMode] = useState('text/plain');
+    // null means "follow the filename"; picking from the dropdown pins it.
+    const [languageId, setLanguageId] = useState<string | null>(null);
 
     const history = useHistory();
     const { hash } = useLocation();
@@ -38,6 +39,10 @@ export default () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const setDirectory = ServerContext.useStoreActions((actions) => actions.files.setDirectory);
     const { addError, clearFlashes } = useFlash();
+
+    // The picked language wins, otherwise fall back to whatever the filename
+    // says. Resolving it here keeps the editor and the dropdown in agreement.
+    const language = languageId ? languageById(languageId) : languageForFilename(hashToPath(hash));
 
     const filePath = hashToPath(hash);
     const directory = action === 'new' ? filePath : dirname(filePath);
@@ -148,30 +153,30 @@ export default () => {
             />
             <div css={tw`relative`}>
                 <SpinnerOverlay visible={loading} />
-                <CodemirrorEditor
-                    mode={mode}
-                    filename={hash.replace(/^#/, '')}
-                    onModeChanged={setMode}
-                    initialContent={content}
-                    fetchContent={(value) => {
-                        fetchFileContent = value;
+                <LumiEditor
+                    language={language}
+                    initialValue={content}
+                    style={{ minHeight: '16rem', height: 'calc(100vh - 20rem)' }}
+                    className={'rounded-lg border border-neutral-600 overflow-hidden'}
+                    registerAccessor={(get) => {
+                        fetchFileContent = () => Promise.resolve(get());
                     }}
-                    onContentSaved={() => {
+                    onSave={() => {
                         if (action !== 'edit') {
                             setModalVisible(true);
                         } else {
                             save();
                         }
                     }}
-                    onContentChanged={action === 'new' ? saveDraft : undefined}
+                    onChange={action === 'new' ? saveDraft : undefined}
                 />
             </div>
             <div css={tw`flex justify-end mt-4`}>
                 <div css={tw`flex-1 sm:flex-none rounded bg-neutral-900 mr-4`}>
-                    <Select value={mode} onChange={(e) => setMode(e.currentTarget.value)}>
-                        {modes.map((mode) => (
-                            <option key={`${mode.name}_${mode.mime}`} value={mode.mime}>
-                                {mode.name}
+                    <Select value={language.id} onChange={(e) => setLanguageId(e.currentTarget.value)}>
+                        {sortedLanguages().map((option) => (
+                            <option key={option.id} value={option.id}>
+                                {option.name}
                             </option>
                         ))}
                     </Select>
