@@ -60,6 +60,15 @@ const SubdomainContainer = () => {
             .then((created) => {
                 setSubdomain(created);
                 setValue('');
+                setConfirm(false);
+
+                // Submitting with Enter and holding the key a moment sends
+                // repeat keydowns. The claim form unmounts on the first one, so
+                // the rest land on whatever button took its place - which is
+                // Release, and which is why the confirm dialog appeared the
+                // instant a subdomain was created. Dropping focus first means
+                // there is nothing for the repeats to activate.
+                (document.activeElement as HTMLElement | null)?.blur();
             })
             .catch((error) => clearAndAddHttpError(error))
             .then(() => setSubmitting(false));
@@ -79,9 +88,7 @@ const SubdomainContainer = () => {
     // that would only come back with the same complaint.
     const trimmed = value.trim().toLowerCase();
     const validLabel =
-        trimmed.length >= bounds.min &&
-        trimmed.length <= bounds.max &&
-        /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(trimmed);
+        trimmed.length >= bounds.min && trimmed.length <= bounds.max && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(trimmed);
 
     return (
         <ServerContentBlock showFlashKey={'server:subdomain'} title={'Subdomain'}>
@@ -94,7 +101,7 @@ const SubdomainContainer = () => {
             ) : subdomain ? (
                 <>
                     <Dialog.Confirm
-                        open={confirm}
+                        open={confirm && !!subdomain}
                         onClose={() => setConfirm(false)}
                         title={'Release Subdomain'}
                         confirm={'Release'}
@@ -111,7 +118,9 @@ const SubdomainContainer = () => {
                             'rounded-lg border border-neutral-600 bg-gradient-to-br from-neutral-700 to-neutral-800 p-6 sm:p-8 text-center'
                         }
                     >
-                        <p className={'text-xs uppercase tracking-widest text-neutral-400 mb-3'}>Your Connect Address</p>
+                        <p className={'text-xs uppercase tracking-widest text-neutral-400 mb-3'}>
+                            Your Connect Address
+                        </p>
                         <CopyOnClick text={subdomain.fqdn}>
                             <div
                                 className={
@@ -135,9 +144,7 @@ const SubdomainContainer = () => {
                                 connect {subdomain.fqdn}
                             </Code>
                         </CopyOnClick>
-                        <p className={'text-xs text-neutral-400 mt-2'}>
-                            Press F8 in FiveM, paste this, and hit enter.
-                        </p>
+                        <p className={'text-xs text-neutral-400 mt-2'}>Press F8 in FiveM, paste this, and hit enter.</p>
                     </TitledGreyBox>
 
                     <div className={'grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'}>
@@ -178,6 +185,7 @@ const SubdomainContainer = () => {
                                 </p>
                             </div>
                             <Button.Danger
+                                type={'button'}
                                 variant={Button.Variants.Secondary}
                                 size={Button.Sizes.Small}
                                 className={'mt-4 sm:mt-0 sm:ml-4 flex-shrink-0'}
