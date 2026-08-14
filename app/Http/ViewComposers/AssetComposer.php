@@ -23,9 +23,12 @@ class AssetComposer
         $view->with('siteConfiguration', [
             'name' => config('app.name') ?? 'Pterodactyl',
             'locale' => config('app.locale') ?? 'en',
-            'recaptcha' => [
-                'enabled' => config('recaptcha.enabled', false),
-                'siteKey' => config('recaptcha.website_key') ?? '',
+            // Only advertise the captcha to the frontend when it can
+            // actually work. Rendering a widget against an empty site key just
+            // produces a broken box on the login form.
+            'turnstile' => [
+                'enabled' => (bool) config('turnstile.enabled') && !empty(config('turnstile.site_key')),
+                'siteKey' => config('turnstile.site_key') ?? '',
             ],
             // Lets the sidebar drop the Subdomain tab entirely when there's no
             // zone wired up, rather than routing to a page that can only

@@ -8396,11 +8396,6 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
-reaptcha@^1.7.2:
-  version "1.7.2"
-  resolved "https://registry.yarnpkg.com/reaptcha/-/reaptcha-1.7.2.tgz#d829f54270c241f46501e92a5a7badeb1fcf372d"
-  integrity sha512-/RXiPeMd+fPUGByv+kAaQlCXCsSflZ9bKX5Fcwv9IYGS1oyT2nntL/8zn9IaiUFHL66T1jBtOABcb92g2+3w8w==
-
 rechoir@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/rechoir/-/rechoir-0.8.0.tgz#49f866e0d32146142da3ad8f0eff352b3215ff22"

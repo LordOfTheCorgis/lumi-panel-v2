@@ -29,16 +29,14 @@ class AdvancedController extends Controller
      */
     public function index(): View
     {
-        $showRecaptchaWarning = false;
-        if (
-            $this->config->get('recaptcha._shipped_secret_key') === $this->config->get('recaptcha.secret_key')
-            || $this->config->get('recaptcha._shipped_website_key') === $this->config->get('recaptcha.website_key')
-        ) {
-            $showRecaptchaWarning = true;
-        }
+        // Warn when the toggle is on but the keys aren't filled in. That
+        // combination silently passes every request through unverified, which
+        // looks identical to working protection from the outside.
+        $showCaptchaWarning = (bool) $this->config->get('turnstile.enabled')
+            && (empty($this->config->get('turnstile.site_key')) || empty($this->config->get('turnstile.secret_key')));
 
         return view('admin.settings.advanced', [
-            'showRecaptchaWarning' => $showRecaptchaWarning,
+            'showCaptchaWarning' => $showCaptchaWarning,
         ]);
     }
 

@@ -10,8 +10,7 @@ import { Formik, FormikHelpers } from 'formik';
 import { object, string } from 'yup';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
-import Reaptcha from 'reaptcha';
-import { createPortal } from 'react-dom';
+import Turnstile, { TurnstileHandle } from '@/components/elements/Turnstile';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
@@ -19,11 +18,14 @@ interface Values {
 }
 
 export default () => {
-    const ref = useRef<Reaptcha>(null);
+    const ref = useRef<TurnstileHandle>(null);
     const [token, setToken] = useState('');
+    // See LoginContainer: Turnstile solves itself, so a submit made before the
+    // token lands is queued rather than rejected.
+    const submitWhenVerified = useRef<(() => void) | null>(null);
 
     const { clearFlashes, addFlash } = useFlash();
-    const { enabled: recaptchaEnabled, siteKey } = useStoreState((state) => state.settings.data!.recaptcha);
+    const { enabled: captchaEnabled, siteKey } = useStoreState((state) => state.settings.data!.turnstile);
 
     useEffect(() => {
         clearFlashes();
@@ -32,15 +34,9 @@ export default () => {
     const handleSubmission = ({ email }: Values, { setSubmitting, resetForm }: FormikHelpers<Values>) => {
         clearFlashes();
 
-        // If there is no token in the state yet, request the token and then abort this submit request
-        // since it will be re-submitted when the recaptcha data is returned by the component.
-        if (recaptchaEnabled && !token) {
-            ref.current!.execute().catch((error) => {
-                console.error(error);
-
-                setSubmitting(false);
-                addFlash({ type: 'error', title: 'Error', message: httpErrorToHuman(error) });
-            });
+        if (captchaEnabled && !token) {
+            submitWhenVerified.current = () =>
+                handleSubmission({ email }, { setSubmitting, resetForm } as FormikHelpers<Values>);
 
             return;
         }
@@ -56,7 +52,7 @@ export default () => {
             })
             .then(() => {
                 setToken('');
-                if (ref.current) ref.current.reset();
+                ref.current?.reset();
 
                 setSubmitting(false);
             });
@@ -72,7 +68,7 @@ export default () => {
                     .required('A valid email address must be provided to continue.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm }) => (
+            {({ isSubmitting }) => (
                 <LoginFormContainer title={'Request Password Reset'}>
                     <Field
                         label={'Email'}
@@ -87,32 +83,21 @@ export default () => {
                             Send Email
                         </Button>
                     </div>
-                    {recaptchaEnabled &&
-                        // Rendered on document.body on purpose. The auth card's
-                        // reveal animations leave an identity transform behind
-                        // (fill-mode: both), and a transformed ancestor becomes
-                        // the containing block for position: fixed - so Google's
-                        // badge anchored itself to the form and got clipped by
-                        // the card's overflow: hidden instead of pinning to the
-                        // viewport corner. Not the shared #modal-portal element:
-                        // the auth blade only renders #app, so that node doesn't
-                        // exist here.
-                        createPortal(
-                            <Reaptcha
-                                ref={ref}
-                                size={'invisible'}
-                                sitekey={siteKey || '_invalid_key'}
-                                onVerify={(response) => {
-                                    setToken(response);
-                                    submitForm();
-                                }}
-                                onExpire={() => {
-                                    setSubmitting(false);
-                                    setToken('');
-                                }}
-                            />,
-                            document.body
-                        )}
+                    {captchaEnabled && (
+                        <Turnstile
+                            ref={ref}
+                            siteKey={siteKey}
+                            onVerify={(value) => {
+                                setToken(value);
+
+                                const pending = submitWhenVerified.current;
+                                submitWhenVerified.current = null;
+                                if (pending) pending();
+                            }}
+                            onExpire={() => setToken('')}
+                            onError={() => setToken('')}
+                        />
+                    )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/login'} className={AuthLinkStyle}>
                             Return to Login

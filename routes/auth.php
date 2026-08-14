@@ -24,14 +24,14 @@ Route::get('/password/reset/{token}', [Auth\LoginController::class, 'index'])->n
 // @see \Pterodactyl\Providers\RouteServiceProvider
 Route::middleware(['throttle:authentication'])->group(function () {
     // Login endpoints.
-    Route::post('/login', [Auth\LoginController::class, 'login'])->middleware('recaptcha');
+    Route::post('/login', [Auth\LoginController::class, 'login'])->middleware('captcha');
     Route::post('/login/checkpoint', Auth\LoginCheckpointController::class)->name('auth.login-checkpoint');
 
     // Forgot password route. A post to this endpoint will trigger an
     // email to be sent containing a reset token.
     Route::post('/password', [Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])
         ->name('auth.post.forgot-password')
-        ->middleware('recaptcha');
+        ->middleware('captcha');
 });
 
 // Password reset routes. This endpoint is hit after going through

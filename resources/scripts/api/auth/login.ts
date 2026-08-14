@@ -9,17 +9,17 @@ export interface LoginResponse {
 export interface LoginData {
     username: string;
     password: string;
-    recaptchaData?: string | null;
+    captchaData?: string | null;
 }
 
-export default ({ username, password, recaptchaData }: LoginData): Promise<LoginResponse> => {
+export default ({ username, password, captchaData }: LoginData): Promise<LoginResponse> => {
     return new Promise((resolve, reject) => {
         http.get('/sanctum/csrf-cookie')
             .then(() =>
                 http.post('/auth/login', {
                     user: username,
                     password,
-                    'g-recaptcha-response': recaptchaData,
+                    'cf-turnstile-response': captchaData,
                 })
             )
             .then((response) => {

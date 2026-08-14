@@ -8,8 +8,7 @@ import { object, string } from 'yup';
 import Field from '@/components/elements/Field';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
-import Reaptcha from 'reaptcha';
-import { createPortal } from 'react-dom';
+import Turnstile, { TurnstileHandle } from '@/components/elements/Turnstile';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
@@ -18,11 +17,15 @@ interface Values {
 }
 
 const LoginContainer = ({ history }: RouteComponentProps) => {
-    const ref = useRef<Reaptcha>(null);
+    const ref = useRef<TurnstileHandle>(null);
     const [token, setToken] = useState('');
+    // Set when the user submits before Turnstile has produced a token. The
+    // widget is already working by then, so we submit for them once it lands
+    // rather than making them click again.
+    const submitWhenVerified = useRef<(() => void) | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const { enabled: recaptchaEnabled, siteKey } = useStoreState((state) => state.settings.data!.recaptcha);
+    const { enabled: captchaEnabled, siteKey } = useStoreState((state) => state.settings.data!.turnstile);
 
     useEffect(() => {
         clearFlashes();
@@ -31,20 +34,15 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
         clearFlashes();
 
-        // If there is no token in the state yet, request the token and then abort this submit request
-        // since it will be re-submitted when the recaptcha data is returned by the component.
-        if (recaptchaEnabled && !token) {
-            ref.current!.execute().catch((error) => {
-                console.error(error);
-
-                setSubmitting(false);
-                clearAndAddHttpError({ error });
-            });
+        // Turnstile renders on mount and solves itself, so there's nothing to
+        // trigger here - just wait for the token and re-run this submit.
+        if (captchaEnabled && !token) {
+            submitWhenVerified.current = () => onSubmit(values, { setSubmitting } as FormikHelpers<Values>);
 
             return;
         }
 
-        login({ ...values, recaptchaData: token })
+        login({ ...values, captchaData: token })
             .then((response) => {
                 if (response.complete) {
                     // @ts-expect-error this is valid
@@ -57,8 +55,10 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
             .catch((error) => {
                 console.error(error);
 
+                // Tokens are single use; keeping a spent one guarantees the
+                // next attempt fails verification too.
                 setToken('');
-                if (ref.current) ref.current.reset();
+                ref.current?.reset();
 
                 setSubmitting(false);
                 clearAndAddHttpError({ error });
@@ -74,7 +74,7 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
                 password: string().required('Please enter your account password.'),
             })}
         >
-            {({ isSubmitting, setSubmitting, submitForm }) => (
+            {({ isSubmitting }) => (
                 <LoginFormContainer title={'Sign in to continue'}>
                     <Field type={'text'} label={'Username or Email'} name={'username'} disabled={isSubmitting} />
                     <div css={tw`mt-6`}>
@@ -85,32 +85,21 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
                             Login
                         </Button>
                     </div>
-                    {recaptchaEnabled &&
-                        // Rendered on document.body on purpose. The auth card's
-                        // reveal animations leave an identity transform behind
-                        // (fill-mode: both), and a transformed ancestor becomes
-                        // the containing block for position: fixed - so Google's
-                        // badge anchored itself to the form and got clipped by
-                        // the card's overflow: hidden instead of pinning to the
-                        // viewport corner. Not the shared #modal-portal element:
-                        // the auth blade only renders #app, so that node doesn't
-                        // exist here.
-                        createPortal(
-                            <Reaptcha
-                                ref={ref}
-                                size={'invisible'}
-                                sitekey={siteKey || '_invalid_key'}
-                                onVerify={(response) => {
-                                    setToken(response);
-                                    submitForm();
-                                }}
-                                onExpire={() => {
-                                    setSubmitting(false);
-                                    setToken('');
-                                }}
-                            />,
-                            document.body
-                        )}
+                    {captchaEnabled && (
+                        <Turnstile
+                            ref={ref}
+                            siteKey={siteKey}
+                            onVerify={(value) => {
+                                setToken(value);
+
+                                const pending = submitWhenVerified.current;
+                                submitWhenVerified.current = null;
+                                if (pending) pending();
+                            }}
+                            onExpire={() => setToken('')}
+                            onError={() => setToken('')}
+                        />
+                    )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/password'} className={AuthLinkStyle}>
                             Forgot password?
