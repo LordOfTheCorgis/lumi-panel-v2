@@ -95,7 +95,15 @@ export default () => {
                                 if (pending) pending();
                             }}
                             onExpire={() => setToken('')}
-                            onError={() => setToken('')}
+                            onError={() => {
+                                setToken('');
+                                submitWhenVerified.current = null;
+                                addFlash({
+                                    type: 'error',
+                                    title: 'Error',
+                                    message: 'The security check failed to load. Disable any ad blocker and reload.',
+                                });
+                            }}
                         />
                     )}
                     <div css={tw`mt-6 text-center`}>

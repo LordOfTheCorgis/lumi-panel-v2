@@ -88,10 +88,12 @@ export default forwardRef<TurnstileHandle, Props>(({ siteKey, onVerify, onExpire
                     'expired-callback': () => handlers.current.onExpire?.(),
                     'error-callback': () => handlers.current.onError?.(),
                     theme: 'dark',
-                    // Stays out of the way until Cloudflare decides this visitor
-                    // needs to prove something, which for almost everyone is
-                    // never.
-                    appearance: 'interaction-only',
+                    // Visible on purpose. 'interaction-only' hides the widget
+                    // until a challenge is required, which also hides every
+                    // failure: if no token ever arrives the login button just
+                    // silently does nothing and there is nothing on screen to
+                    // explain why. On an auth form that trade isn't worth it.
+                    appearance: 'always',
                 });
             })
             .catch(() => handlers.current.onError?.());

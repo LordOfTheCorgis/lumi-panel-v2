@@ -35,9 +35,21 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
         clearFlashes();
 
         // Turnstile renders on mount and solves itself, so there's nothing to
-        // trigger here - just wait for the token and re-run this submit.
+        // trigger here - just wait for the token and re-run this submit. The
+        // timeout matters: without it a widget that never returns leaves the
+        // button spinning forever with nothing explaining why.
         if (captchaEnabled && !token) {
             submitWhenVerified.current = () => onSubmit(values, { setSubmitting } as FormikHelpers<Values>);
+
+            window.setTimeout(() => {
+                if (!submitWhenVerified.current) return;
+
+                submitWhenVerified.current = null;
+                setSubmitting(false);
+                clearAndAddHttpError({
+                    error: new Error('Could not complete the security check. Please reload the page and try again.'),
+                });
+            }, 15000);
 
             return;
         }
@@ -97,7 +109,15 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
                                 if (pending) pending();
                             }}
                             onExpire={() => setToken('')}
-                            onError={() => setToken('')}
+                            onError={() => {
+                                setToken('');
+                                submitWhenVerified.current = null;
+                                clearAndAddHttpError({
+                                    error: new Error(
+                                        'The security check failed to load. Disable any ad blocker for this page and reload.'
+                                    ),
+                                });
+                            }}
                         />
                     )}
                     <div css={tw`mt-6 text-center`}>
