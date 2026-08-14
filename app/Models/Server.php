@@ -261,6 +261,16 @@ class Server extends Model implements Identifiable
     }
 
     /**
+     * The customer-chosen subdomain pointing at this server, if one is claimed.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<\Pterodactyl\Models\ServerSubdomain, $this>
+     */
+    public function subdomain(): HasOne
+    {
+        return $this->hasOne(ServerSubdomain::class, 'server_id');
+    }
+
+    /**
      * Gets information for the nest associated with this server.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\Pterodactyl\Models\Nest, $this>

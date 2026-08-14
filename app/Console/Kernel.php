@@ -10,6 +10,7 @@ use Pterodactyl\Repositories\Eloquent\SettingsRepository;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Pterodactyl\Services\Telemetry\TelemetryCollectionService;
 use Pterodactyl\Console\Commands\Schedule\ProcessRunnableCommand;
+use Pterodactyl\Console\Commands\Subdomains\SyncSubdomainsCommand;
 use Pterodactyl\Console\Commands\Maintenance\PruneOrphanedBackupsCommand;
 use Pterodactyl\Console\Commands\Maintenance\CleanServiceBackupFilesCommand;
 
@@ -42,6 +43,11 @@ class Kernel extends ConsoleKernel
 
         if (config('activity.prune_days')) {
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
+        }
+
+        if (config('subdomains.enabled')) {
+            // Catches records left pointing at an old node after a transfer.
+            $schedule->command(SyncSubdomainsCommand::class)->hourly()->withoutOverlapping();
         }
 
         if (config('pterodactyl.telemetry.enabled')) {

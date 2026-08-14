@@ -132,6 +132,10 @@ Route::group([
         Route::post('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'update']);
         Route::post('/allocations/{allocation}/primary', [Client\Servers\NetworkAllocationController::class, 'setPrimary']);
         Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
+
+        Route::get('/subdomain', [Client\Servers\SubdomainController::class, 'index']);
+        Route::post('/subdomain', [Client\Servers\SubdomainController::class, 'store']);
+        Route::delete('/subdomain', [Client\Servers\SubdomainController::class, 'delete']);
     });
 
     Route::group(['prefix' => '/users'], function () {

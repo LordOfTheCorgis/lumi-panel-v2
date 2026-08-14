@@ -50,6 +50,10 @@ class Permission extends Model
     public const ACTION_ALLOCATION_UPDATE = 'allocation.update';
     public const ACTION_ALLOCATION_DELETE = 'allocation.delete';
 
+    public const ACTION_SUBDOMAIN_READ = 'subdomain.read';
+    public const ACTION_SUBDOMAIN_CREATE = 'subdomain.create';
+    public const ACTION_SUBDOMAIN_DELETE = 'subdomain.delete';
+
     public const ACTION_FILE_READ = 'file.read';
     public const ACTION_FILE_READ_CONTENT = 'file.read-content';
     public const ACTION_FILE_CREATE = 'file.create';
@@ -162,6 +166,16 @@ class Permission extends Model
                 'create' => 'Allows a user to assign additional allocations to the server.',
                 'update' => 'Allows a user to change the primary server allocation and attach notes to each allocation.',
                 'delete' => 'Allows a user to delete an allocation from the server.',
+            ],
+        ],
+
+        // Controls permissions for the server's public subdomain.
+        'subdomain' => [
+            'description' => 'Permissions that control a user\'s ability to manage the public subdomain pointing at this server.',
+            'keys' => [
+                'read' => 'Allows a user to view the subdomain assigned to this server.',
+                'create' => 'Allows a user to claim a subdomain for this server.',
+                'delete' => 'Allows a user to release the subdomain assigned to this server.',
             ],
         ],
 

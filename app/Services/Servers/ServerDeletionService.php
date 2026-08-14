@@ -7,6 +7,7 @@ use Pterodactyl\Models\Server;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
+use Pterodactyl\Services\Subdomains\SubdomainService;
 use Pterodactyl\Services\Databases\DatabaseManagementService;
 use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
 
@@ -21,6 +22,7 @@ class ServerDeletionService
         private ConnectionInterface $connection,
         private DaemonServerRepository $daemonServerRepository,
         private DatabaseManagementService $databaseManagementService,
+        private SubdomainService $subdomainService,
     ) {
     }
 
@@ -80,6 +82,17 @@ class ServerDeletionService
             // clear any allocation notes for the server
             $server->allocations()->update(['notes' => null]);
 
+            // Release the subdomain before the row cascades away, otherwise the
+            // Cloudflare record outlives the server and the name stays taken.
+            // Never let a DNS failure block the deletion; the sync command will
+            // pick up anything orphaned.
+            if ($subdomain = $server->subdomain) {
+                try {
+                    $this->subdomainService->delete($subdomain);
+                } catch (\Exception $exception) {
+                    Log::warning($exception);
+                }
+            }
 
             $server->delete();
         });

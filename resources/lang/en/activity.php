@@ -110,6 +110,10 @@ return [
             'primary' => 'Set :allocation as the primary server allocation',
             'delete' => 'Deleted the :allocation allocation',
         ],
+        'subdomain' => [
+            'create' => 'Claimed the subdomain :fqdn',
+            'delete' => 'Released the subdomain :fqdn',
+        ],
         'schedule' => [
             'create' => 'Created the :name schedule',
             'update' => 'Updated the :name schedule',
