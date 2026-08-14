@@ -77,9 +77,19 @@ export default () => {
 
     // Writing straight to xterm on every socket message janks hard during a
     // log flood (server boot/restart can fire hundreds of lines in a burst).
-    // Instead queue lines and flush once per animation frame, batched into a
-    // single write() call - smooth rendering at the cost of falling a frame
-    // or two behind reality under heavy load, which is the trade we want.
+    // Queue lines and drain them a bounded chunk at a time, once per animation
+    // frame. Capping the chunk size matters as much as the batching itself -
+    // one write() call for an entire multi-hundred-line backlog can still
+    // block the main thread past a frame budget and cause a visible hitch.
+    // Keeping every frame's write() small guarantees steady, hitch-free
+    // scrolling; a big backlog just drains over a few extra frames instead of
+    // one, which is exactly the "fall behind a little, stay smooth" trade.
+    const MAX_LINES_PER_FRAME = 50;
+    // Backlog beyond this is going to scroll off the default 1000-line
+    // scrollback the moment it's written anyway, so there's no point holding
+    // (or spending frames draining) more of it than that in memory.
+    const MAX_BUFFERED_LINES = 2000;
+
     const outputBuffer = useRef<string[]>([]);
     const flushFrame = useRef<number | null>(null);
 
@@ -88,14 +98,20 @@ export default () => {
         flushFrame.current = requestAnimationFrame(() => {
             flushFrame.current = null;
             if (outputBuffer.current.length) {
-                terminal.write(outputBuffer.current.join(''));
-                outputBuffer.current = [];
+                const chunk = outputBuffer.current.splice(0, MAX_LINES_PER_FRAME);
+                terminal.write(chunk.join(''));
+                if (outputBuffer.current.length) {
+                    scheduleFlush();
+                }
             }
         });
     };
 
     const queueLine = (line: string) => {
         outputBuffer.current.push(line + '\r\n');
+        if (outputBuffer.current.length > MAX_BUFFERED_LINES) {
+            outputBuffer.current.splice(0, outputBuffer.current.length - MAX_BUFFERED_LINES);
+        }
         scheduleFlush();
     };
 
