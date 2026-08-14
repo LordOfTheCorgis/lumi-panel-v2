@@ -11,6 +11,7 @@ import { object, string } from 'yup';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
 import Reaptcha from 'reaptcha';
+import Portal from '@/components/elements/Portal';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
@@ -87,19 +88,28 @@ export default () => {
                         </Button>
                     </div>
                     {recaptchaEnabled && (
-                        <Reaptcha
-                            ref={ref}
-                            size={'invisible'}
-                            sitekey={siteKey || '_invalid_key'}
-                            onVerify={(response) => {
-                                setToken(response);
-                                submitForm();
-                            }}
-                            onExpire={() => {
-                                setSubmitting(false);
-                                setToken('');
-                            }}
-                        />
+                        // Rendered outside the card on purpose. The auth card's
+                        // reveal animations leave an identity transform behind
+                        // (fill-mode: both), and a transformed ancestor becomes
+                        // the containing block for position: fixed - so Google's
+                        // badge anchored itself to the form and got clipped by
+                        // the card's overflow: hidden instead of pinning to the
+                        // viewport corner.
+                        <Portal>
+                            <Reaptcha
+                                ref={ref}
+                                size={'invisible'}
+                                sitekey={siteKey || '_invalid_key'}
+                                onVerify={(response) => {
+                                    setToken(response);
+                                    submitForm();
+                                }}
+                                onExpire={() => {
+                                    setSubmitting(false);
+                                    setToken('');
+                                }}
+                            />
+                        </Portal>
                     )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/login'} className={AuthLinkStyle}>
