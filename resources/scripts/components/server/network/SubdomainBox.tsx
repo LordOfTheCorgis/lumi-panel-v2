@@ -105,7 +105,9 @@ const SubdomainBox = () => {
                             <Button.Danger
                                 variant={Button.Variants.Secondary}
                                 size={Button.Sizes.Small}
-                                css={tw`mt-4 sm:mt-0 sm:ml-4 shrink-0`}
+                                // flex-shrink-0, not shrink-0: twin.macro's class map is older
+                                // than the Tailwind build, so the v3 alias doesn't resolve here.
+                                css={tw`mt-4 sm:mt-0 sm:ml-4 flex-shrink-0`}
                                 disabled={submitting}
                                 onClick={() => setConfirm(true)}
                             >
