@@ -78,34 +78,37 @@ export default () => {
                         name={'email'}
                         type={'email'}
                     />
+                    {captchaEnabled && (
+                        <div css={tw`mt-6`}>
+                            <Turnstile
+                                ref={ref}
+                                siteKey={siteKey}
+                                onVerify={(value) => {
+                                    setToken(value);
+
+                                    const pending = submitWhenVerified.current;
+                                    submitWhenVerified.current = null;
+                                    if (pending) pending();
+                                }}
+                                onExpire={() => setToken('')}
+                                onError={() => {
+                                    setToken('');
+                                    submitWhenVerified.current = null;
+                                    addFlash({
+                                        type: 'error',
+                                        title: 'Error',
+                                        message:
+                                            'The security check failed to load. Disable any ad blocker and reload.',
+                                    });
+                                }}
+                            />
+                        </div>
+                    )}
                     <div css={tw`mt-6`}>
                         <Button type={'submit'} size={'xlarge'} disabled={isSubmitting} isLoading={isSubmitting}>
                             Send Email
                         </Button>
                     </div>
-                    {captchaEnabled && (
-                        <Turnstile
-                            ref={ref}
-                            siteKey={siteKey}
-                            onVerify={(value) => {
-                                setToken(value);
-
-                                const pending = submitWhenVerified.current;
-                                submitWhenVerified.current = null;
-                                if (pending) pending();
-                            }}
-                            onExpire={() => setToken('')}
-                            onError={() => {
-                                setToken('');
-                                submitWhenVerified.current = null;
-                                addFlash({
-                                    type: 'error',
-                                    title: 'Error',
-                                    message: 'The security check failed to load. Disable any ad blocker and reload.',
-                                });
-                            }}
-                        />
-                    )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/login'} className={AuthLinkStyle}>
                             Return to Login

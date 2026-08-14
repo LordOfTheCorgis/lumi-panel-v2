@@ -92,34 +92,36 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
                     <div css={tw`mt-6`}>
                         <Field type={'password'} label={'Password'} name={'password'} disabled={isSubmitting} />
                     </div>
+                    {captchaEnabled && (
+                        <div css={tw`mt-6`}>
+                            <Turnstile
+                                ref={ref}
+                                siteKey={siteKey}
+                                onVerify={(value) => {
+                                    setToken(value);
+
+                                    const pending = submitWhenVerified.current;
+                                    submitWhenVerified.current = null;
+                                    if (pending) pending();
+                                }}
+                                onExpire={() => setToken('')}
+                                onError={() => {
+                                    setToken('');
+                                    submitWhenVerified.current = null;
+                                    clearAndAddHttpError({
+                                        error: new Error(
+                                            'The security check failed to load. Disable any ad blocker for this page and reload.'
+                                        ),
+                                    });
+                                }}
+                            />
+                        </div>
+                    )}
                     <div css={tw`mt-6`}>
                         <Button type={'submit'} size={'xlarge'} isLoading={isSubmitting} disabled={isSubmitting}>
                             Login
                         </Button>
                     </div>
-                    {captchaEnabled && (
-                        <Turnstile
-                            ref={ref}
-                            siteKey={siteKey}
-                            onVerify={(value) => {
-                                setToken(value);
-
-                                const pending = submitWhenVerified.current;
-                                submitWhenVerified.current = null;
-                                if (pending) pending();
-                            }}
-                            onExpire={() => setToken('')}
-                            onError={() => {
-                                setToken('');
-                                submitWhenVerified.current = null;
-                                clearAndAddHttpError({
-                                    error: new Error(
-                                        'The security check failed to load. Disable any ad blocker for this page and reload.'
-                                    ),
-                                });
-                            }}
-                        />
-                    )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/password'} className={AuthLinkStyle}>
                             Forgot password?

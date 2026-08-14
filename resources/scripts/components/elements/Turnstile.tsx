@@ -88,6 +88,9 @@ export default forwardRef<TurnstileHandle, Props>(({ siteKey, onVerify, onExpire
                     'expired-callback': () => handlers.current.onExpire?.(),
                     'error-callback': () => handlers.current.onError?.(),
                     theme: 'dark',
+                    // Fills the parent width rather than sitting at a fixed
+                    // 300px, so it lines up with the form fields above it.
+                    size: 'flexible',
                     // Visible on purpose. 'interaction-only' hides the widget
                     // until a challenge is required, which also hides every
                     // failure: if no token ever arrives the login button just
