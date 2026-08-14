@@ -130,6 +130,13 @@ const AccountSessions = () => {
                     })}
                 </div>
             )}
+
+            {data?.supported && (data.items?.length ?? 0) > 0 && (
+                <p className={'border-t border-neutral-600 px-4 py-3 text-xs text-neutral-500'}>
+                    Revoking signs that device out and clears &ldquo;remember me&rdquo; on all of your devices. Your
+                    other sessions stay active but will ask for your password once they expire.
+                </p>
+            )}
         </div>
     );
 };
