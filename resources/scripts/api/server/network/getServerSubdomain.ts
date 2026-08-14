@@ -5,6 +5,9 @@ export interface Subdomain {
     subdomain: string;
     domain: string;
     fqdn: string;
+    target: string | null;
+    port: number | null;
+    ttl: number;
     createdAt: Date;
 }
 
@@ -23,6 +26,9 @@ export const rawDataToSubdomain = (data: Record<string, any>): Subdomain => ({
     subdomain: data.subdomain,
     domain: data.domain,
     fqdn: data.fqdn,
+    target: data.target ?? null,
+    port: data.port ?? null,
+    ttl: data.ttl,
     createdAt: new Date(data.created_at),
 });
 

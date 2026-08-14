@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import tw from 'twin.macro';
-import { faGlobe } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faPlug, faServer, faTerminal } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
 import TitledGreyBox from '@/components/elements/TitledGreyBox';
 import Input from '@/components/elements/Input';
@@ -15,6 +16,15 @@ import { useFlashKey } from '@/plugins/useFlash';
 import getServerSubdomain, { Subdomain } from '@/api/server/network/getServerSubdomain';
 import createServerSubdomain from '@/api/server/network/createServerSubdomain';
 import deleteServerSubdomain from '@/api/server/network/deleteServerSubdomain';
+
+// Small labelled row for the details panels. Values are monospace because
+// they're all addresses, ports and record names.
+const Detail = ({ label, value, mono = true }: { label: string; value: React.ReactNode; mono?: boolean }) => (
+    <div className={'flex items-baseline justify-between gap-4 py-2 border-b border-neutral-700 last:border-b-0'}>
+        <p className={'text-xs uppercase tracking-wide text-neutral-400 whitespace-nowrap'}>{label}</p>
+        <p className={`text-sm text-neutral-200 truncate ${mono ? 'font-mono' : ''}`}>{value}</p>
+    </div>
+);
 
 const SubdomainContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
@@ -65,6 +75,13 @@ const SubdomainContainer = () => {
             .then(() => setSubmitting(false));
     };
 
+    // Mirrors the server-side rules so the button disables before a round trip
+    // that would only come back with the same complaint.
+    const trimmed = value.trim().toLowerCase();
+    const validLabel =
+        trimmed.length >= bounds.min &&
+        trimmed.length <= bounds.max &&
+        /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(trimmed);
 
     return (
         <ServerContentBlock showFlashKey={'server:subdomain'} title={'Subdomain'}>
@@ -75,7 +92,7 @@ const SubdomainContainer = () => {
                     Subdomains are not available on this panel right now.
                 </p>
             ) : subdomain ? (
-                <TitledGreyBox title={'Your Address'} icon={faGlobe}>
+                <>
                     <Dialog.Confirm
                         open={confirm}
                         onClose={() => setConfirm(false)}
@@ -86,49 +103,121 @@ const SubdomainContainer = () => {
                         {subdomain.fqdn} will stop pointing at this server and the name becomes available for anyone
                         else to claim. Players using it will no longer be able to connect.
                     </Dialog.Confirm>
-                    <div css={tw`sm:flex items-center justify-between`}>
-                        <div css={tw`min-w-0`}>
-                            <CopyOnClick text={subdomain.fqdn}>
-                                <Code dark className={'truncate hover:bg-neutral-700 transition-colors duration-150'}>
+
+                    {/* Hero. The address is the whole point of the page, so it
+                        gets the space rather than sharing a row with a button. */}
+                    <div
+                        className={
+                            'rounded-lg border border-neutral-600 bg-gradient-to-br from-neutral-700 to-neutral-800 p-6 sm:p-8 text-center'
+                        }
+                    >
+                        <p className={'text-xs uppercase tracking-widest text-neutral-400 mb-3'}>Your Connect Address</p>
+                        <CopyOnClick text={subdomain.fqdn}>
+                            <div
+                                className={
+                                    'inline-block max-w-full cursor-pointer rounded-md bg-neutral-900/80 px-5 py-3 border border-neutral-600 hover:border-primary-400 transition-colors duration-150'
+                                }
+                            >
+                                <span className={'font-mono text-lg sm:text-2xl text-neutral-50 break-all'}>
                                     {subdomain.fqdn}
-                                </Code>
-                            </CopyOnClick>
-                            <p css={tw`text-xs text-neutral-400 mt-2`}>
-                                Click to copy. Players connect with this alone, no port needed. It keeps working if the
-                                server moves nodes or changes port; DNS changes can take a few minutes to reach
-                                everyone.
-                            </p>
-                        </div>
-                        <Can action={'subdomain.delete'}>
+                                </span>
+                            </div>
+                        </CopyOnClick>
+                        <p className={'text-xs text-neutral-400 mt-3'}>
+                            Click to copy. No port needed &mdash; players connect with this alone.
+                        </p>
+                    </div>
+
+                    {/* The thing a player actually pastes. */}
+                    <TitledGreyBox title={'In-Game Connect Command'} icon={faTerminal} className={'mt-6'}>
+                        <CopyOnClick text={`connect ${subdomain.fqdn}`}>
+                            <Code dark className={'block truncate hover:bg-neutral-700 transition-colors duration-150'}>
+                                connect {subdomain.fqdn}
+                            </Code>
+                        </CopyOnClick>
+                        <p className={'text-xs text-neutral-400 mt-2'}>
+                            Press F8 in FiveM, paste this, and hit enter.
+                        </p>
+                    </TitledGreyBox>
+
+                    <div className={'grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'}>
+                        <TitledGreyBox title={'Connection'} icon={faPlug}>
+                            <Detail label={'Points to'} value={subdomain.target || 'unknown'} />
+                            <Detail label={'Game port'} value={subdomain.port ?? 'unknown'} />
+                            <Detail
+                                label={'Claimed'}
+                                value={subdomain.createdAt.toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                })}
+                                mono={false}
+                            />
+                        </TitledGreyBox>
+
+                        {/* Shown so a customer debugging a connection issue can
+                            see exactly what we published on their behalf. */}
+                        <TitledGreyBox title={'DNS Records'} icon={faServer}>
+                            <Detail label={'A'} value={`${subdomain.fqdn} → ${subdomain.target || '?'}`} />
+                            <Detail label={'SRV'} value={`_cfx._udp → port ${subdomain.port ?? '?'}`} />
+                            <Detail label={'TTL'} value={`${subdomain.ttl}s`} />
+                        </TitledGreyBox>
+                    </div>
+
+                    <Can action={'subdomain.delete'}>
+                        <div
+                            className={
+                                'mt-6 rounded-lg border border-red-500/40 bg-red-500/5 p-4 sm:flex items-center justify-between'
+                            }
+                        >
+                            <div className={'min-w-0'}>
+                                <p className={'text-sm font-medium text-neutral-100'}>Release this subdomain</p>
+                                <p className={'text-xs text-neutral-400 mt-1'}>
+                                    Frees the name for anyone else to claim. Players using it will stop connecting
+                                    immediately.
+                                </p>
+                            </div>
                             <Button.Danger
                                 variant={Button.Variants.Secondary}
                                 size={Button.Sizes.Small}
-                                css={tw`mt-4 sm:mt-0 sm:ml-4 flex-shrink-0`}
+                                className={'mt-4 sm:mt-0 sm:ml-4 flex-shrink-0'}
                                 disabled={submitting}
                                 onClick={() => setConfirm(true)}
                             >
                                 Release
                             </Button.Danger>
-                        </Can>
-                    </div>
-                </TitledGreyBox>
+                        </div>
+                    </Can>
+                </>
             ) : (
-                <TitledGreyBox title={'Claim a Subdomain'} icon={faGlobe}>
-                    <Can
-                        action={'subdomain.create'}
-                        renderOnError={
+                <Can
+                    action={'subdomain.create'}
+                    renderOnError={
+                        <TitledGreyBox title={'Subdomain'} icon={faGlobe}>
                             <p css={tw`text-sm text-neutral-300`}>
                                 This server does not have a subdomain, and you do not have permission to claim one.
                             </p>
-                        }
-                    >
+                        </TitledGreyBox>
+                    }
+                >
+                    <div className={'rounded-lg border border-neutral-600 bg-neutral-700 p-6 sm:p-8'}>
+                        <div className={'text-center max-w-lg mx-auto'}>
+                            <FontAwesomeIcon icon={faGlobe} className={'text-3xl text-primary-400 mb-4'} />
+                            <h2 className={'text-lg font-medium text-neutral-100'}>Claim your address</h2>
+                            <p className={'text-sm text-neutral-300 mt-2'}>
+                                Give players a name to remember instead of an IP and port. It keeps working if your
+                                server moves nodes or changes port.
+                            </p>
+                        </div>
+
                         <form
+                            className={'mt-6 max-w-lg mx-auto'}
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                if (value.trim().length > 0 && !submitting) submit();
+                                if (validLabel && !submitting) submit();
                             }}
                         >
-                            <div css={tw`flex items-stretch`}>
+                            <div className={'flex items-stretch'}>
                                 <Input
                                     value={value}
                                     onChange={(e) => setValue(e.currentTarget.value)}
@@ -138,26 +227,38 @@ const SubdomainContainer = () => {
                                     autoCorrect={'off'}
                                     autoCapitalize={'none'}
                                     spellCheck={false}
-                                    css={tw`rounded-r-none`}
+                                    css={tw`rounded-r-none font-mono`}
                                 />
                                 <span
-                                    css={tw`flex items-center px-3 bg-neutral-800 border border-l-0 border-neutral-600 rounded-r text-sm text-neutral-300 select-none whitespace-nowrap`}
+                                    className={
+                                        'flex items-center px-3 bg-neutral-800 border border-l-0 border-neutral-600 rounded-r font-mono text-sm text-neutral-300 select-none whitespace-nowrap'
+                                    }
                                 >
                                     .{domain}
                                 </span>
                             </div>
-                            <p css={tw`text-xs text-neutral-400 mt-2`}>
-                                {bounds.min}-{bounds.max} characters. Letters, numbers and hyphens only. Once claimed
-                                it is yours until you release it.
+
+                            {/* Live preview beats explaining the format in prose. */}
+                            <p className={'text-center text-sm text-neutral-400 mt-4'}>
+                                Players will connect to{' '}
+                                <span className={'font-mono text-neutral-200'}>
+                                    {trimmed.length > 0 ? `${trimmed}.${domain}` : `yourname.${domain}`}
+                                </span>
                             </p>
-                            <div css={tw`mt-4 flex justify-end`}>
-                                <Button type={'submit'} disabled={submitting || value.trim().length === 0}>
+
+                            <div className={'mt-6 flex justify-center'}>
+                                <Button type={'submit'} disabled={submitting || !validLabel}>
                                     Claim Subdomain
                                 </Button>
                             </div>
+
+                            <p className={'text-xs text-neutral-500 mt-4 text-center'}>
+                                {bounds.min}&ndash;{bounds.max} characters. Letters, numbers and hyphens only, and it
+                                cannot start or end with a hyphen.
+                            </p>
                         </form>
-                    </Can>
-                </TitledGreyBox>
+                    </div>
+                </Can>
             )}
         </ServerContentBlock>
     );
