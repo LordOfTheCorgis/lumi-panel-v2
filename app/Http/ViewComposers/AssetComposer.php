@@ -27,6 +27,13 @@ class AssetComposer
                 'enabled' => config('recaptcha.enabled', false),
                 'siteKey' => config('recaptcha.website_key') ?? '',
             ],
+            // Lets the sidebar drop the Subdomain tab entirely when there's no
+            // zone wired up, rather than routing to a page that can only
+            // apologise. Safe to expose: the domain is public by definition.
+            'subdomains' => [
+                'enabled' => (bool) config('subdomains.enabled', false),
+                'domain' => config('subdomains.domain') ?? '',
+            ],
         ]);
     }
 }

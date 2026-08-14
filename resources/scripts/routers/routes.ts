@@ -7,6 +7,7 @@ import {
     faCogs,
     faDatabase,
     faFolderOpen,
+    faGlobe,
     faKey,
     faNetworkWired,
     faPlay,
@@ -22,6 +23,7 @@ import ScheduleContainer from '@/components/server/schedules/ScheduleContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
 import BackupContainer from '@/components/server/backups/BackupContainer';
 import NetworkContainer from '@/components/server/network/NetworkContainer';
+import SubdomainContainer from '@/components/server/subdomain/SubdomainContainer';
 import StartupContainer from '@/components/server/startup/StartupContainer';
 import FileManagerContainer from '@/components/server/files/FileManagerContainer';
 import SettingsContainer from '@/components/server/settings/SettingsContainer';
@@ -59,6 +61,9 @@ interface ServerRouteDefinition extends RouteDefinition {
     // Restricts this route to servers whose egg exposes FIVEM_LICENSE - the single
     // definition of "this is a FiveM server", shared with the startup page.
     requiresFiveM?: boolean;
+    // Hides this route unless the panel has a subdomain zone configured, so it
+    // doesn't route to a page that can only apologise.
+    requiresSubdomains?: boolean;
 }
 
 interface Routes {
@@ -165,6 +170,15 @@ export default {
             group: 'Configuration',
             icon: faNetworkWired,
             component: NetworkContainer,
+        },
+        {
+            path: '/subdomain',
+            permission: 'subdomain.*',
+            name: 'Subdomain',
+            group: 'Configuration',
+            icon: faGlobe,
+            component: SubdomainContainer,
+            requiresSubdomains: true,
         },
         {
             path: '/startup',

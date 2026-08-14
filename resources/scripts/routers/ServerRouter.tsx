@@ -11,6 +11,7 @@ import Spinner from '@/components/elements/Spinner';
 import { NotFound, ServerError } from '@/components/elements/ScreenBlock';
 import { httpErrorToHuman } from '@/api/http';
 import { useStoreState } from 'easy-peasy';
+import { ApplicationStore } from '@/state';
 import InstallListener from '@/components/server/InstallListener';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
@@ -36,6 +37,7 @@ export default () => {
         // enabled, and matches what the startup page keys off.
         (state) => state.server.data?.variables.some((v) => v.envVariable === 'FIVEM_LICENSE') ?? false
     );
+    const subdomainsEnabled = useStoreState((state: ApplicationStore) => state.settings.data!.subdomains.enabled);
     const inConflictState = ServerContext.useStoreState((state) => state.server.inConflictState);
     const serverId = ServerContext.useStoreState((state) => state.server.data?.internalId);
     const getServer = ServerContext.useStoreActions((actions) => actions.server.getServer);
@@ -62,7 +64,12 @@ export default () => {
         const groups = new Map<string, typeof routes.server>();
 
         routes.server
-            .filter((route) => !!route.name && (!route.requiresFiveM || isFiveM))
+            .filter(
+                (route) =>
+                    !!route.name &&
+                    (!route.requiresFiveM || isFiveM) &&
+                    (!route.requiresSubdomains || subdomainsEnabled)
+            )
             .forEach((route) => {
                 const key = route.group || 'Server';
 
@@ -70,7 +77,7 @@ export default () => {
             });
 
         return Array.from(groups.entries());
-    }, [isFiveM]);
+    }, [isFiveM, subdomainsEnabled]);
 
     useEffect(() => {
         setError('');
@@ -159,7 +166,11 @@ export default () => {
                             <TransitionRouter>
                                 <Switch location={location}>
                                     {routes.server
-                                        .filter((route) => !route.requiresFiveM || isFiveM)
+                                        .filter(
+                                            (route) =>
+                                                (!route.requiresFiveM || isFiveM) &&
+                                                (!route.requiresSubdomains || subdomainsEnabled)
+                                        )
                                         .map(({ path, permission, component: Component }) => (
                                             <PermissionRoute key={path} permission={permission} path={to(path)} exact>
                                                 <Spinner.Suspense>

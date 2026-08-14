@@ -7,6 +7,10 @@ export interface SiteSettings {
         enabled: boolean;
         siteKey: string;
     };
+    subdomains: {
+        enabled: boolean;
+        domain: string;
+    };
 }
 
 export interface SettingsStore {
