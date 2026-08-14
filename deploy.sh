@@ -90,8 +90,16 @@ php artisan storage:link 2>/dev/null || true
 step "Clearing caches"
 php artisan optimize:clear
 
-step "Fixing ownership (${WEB_USER})"
-chown -R "${WEB_USER}:${WEB_USER}" "$PANEL_DIR"
+step "Fixing ownership"
+# Keep whoever actually ran this (not root, not the web user) as the owner so
+# a deploy doesn't lock them out of the tree they just checked out. Group
+# stays WEB_USER with g+w, plus setgid on directories so new files/dirs keep
+# inheriting that group, so the webserver can still read/write storage,
+# cache, uploads, etc.
+DEPLOY_USER="${SUDO_USER:-$(id -un)}"
+chown -R "${DEPLOY_USER}:${WEB_USER}" "$PANEL_DIR"
+chmod -R g+w "$PANEL_DIR"
+find "$PANEL_DIR" -type d -exec chmod g+s {} +
 
 step "Done - bringing the panel back up"
 # The EXIT trap runs `php artisan up`.
