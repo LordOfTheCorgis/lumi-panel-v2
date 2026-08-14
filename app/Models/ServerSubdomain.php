@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $domain
  * @property string $zone_id
  * @property string|null $record_id
+ * @property string|null $srv_record_id
  * @property string|null $record_target
+ * @property int|null $record_port
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property string $fqdn
@@ -28,6 +30,7 @@ class ServerSubdomain extends Model
     protected $casts = [
         'id' => 'int',
         'server_id' => 'int',
+        'record_port' => 'int',
     ];
 
     public static array $validationRules = [
@@ -36,7 +39,9 @@ class ServerSubdomain extends Model
         'domain' => 'required|string',
         'zone_id' => 'required|string',
         'record_id' => 'nullable|string',
+        'srv_record_id' => 'nullable|string',
         'record_target' => 'nullable|string',
+        'record_port' => 'nullable|integer',
     ];
 
     /**

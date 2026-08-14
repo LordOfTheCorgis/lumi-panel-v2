@@ -67,6 +67,51 @@ class CloudflareClient
     }
 
     /**
+     * Publish the _cfx._udp SRV record FiveM uses to discover the port, so
+     * players connect with a bare hostname.
+     *
+     * @throws DisplayException
+     */
+    public function createSrvRecord(string $fqdn, int $port, string $comment = ''): string
+    {
+        $response = $this->request('POST', "/zones/{$this->zone()}/dns_records", [
+            'type' => 'SRV',
+            'name' => '_cfx._udp.' . $fqdn,
+            'ttl' => (int) config('subdomains.ttl', 120),
+            'comment' => $comment,
+            'data' => [
+                'priority' => 0,
+                'weight' => 5,
+                'port' => $port,
+                // Points back at our own A record rather than the raw IP, so a
+                // node move only has to update one record.
+                'target' => $fqdn,
+            ],
+        ]);
+
+        return $response['id'];
+    }
+
+    /**
+     * @throws DisplayException
+     */
+    public function updateSrvRecord(string $recordId, string $fqdn, int $port, string $comment = ''): void
+    {
+        $this->request('PUT', "/zones/{$this->zone()}/dns_records/{$recordId}", [
+            'type' => 'SRV',
+            'name' => '_cfx._udp.' . $fqdn,
+            'ttl' => (int) config('subdomains.ttl', 120),
+            'comment' => $comment,
+            'data' => [
+                'priority' => 0,
+                'weight' => 5,
+                'port' => $port,
+                'target' => $fqdn,
+            ],
+        ]);
+    }
+
+    /**
      * Best-effort delete. A record that is already gone is a success as far as
      * callers are concerned - the desired end state is "no such record".
      */

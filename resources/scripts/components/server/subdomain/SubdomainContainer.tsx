@@ -18,9 +18,6 @@ import deleteServerSubdomain from '@/api/server/network/deleteServerSubdomain';
 
 const SubdomainContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
-    const primaryPort = ServerContext.useStoreState(
-        (state) => state.server.data!.allocations.find((a) => a.isDefault)?.port
-    );
 
     const { clearFlashes, clearAndAddHttpError } = useFlashKey('server:subdomain');
 
@@ -68,7 +65,6 @@ const SubdomainContainer = () => {
             .then(() => setSubmitting(false));
     };
 
-    const address = subdomain ? (primaryPort ? `${subdomain.fqdn}:${primaryPort}` : subdomain.fqdn) : '';
 
     return (
         <ServerContentBlock showFlashKey={'server:subdomain'} title={'Subdomain'}>
@@ -92,14 +88,14 @@ const SubdomainContainer = () => {
                     </Dialog.Confirm>
                     <div css={tw`sm:flex items-center justify-between`}>
                         <div css={tw`min-w-0`}>
-                            <CopyOnClick text={address}>
+                            <CopyOnClick text={subdomain.fqdn}>
                                 <Code dark className={'truncate'}>
-                                    {address}
+                                    {subdomain.fqdn}
                                 </Code>
                             </CopyOnClick>
                             <p css={tw`text-xs text-neutral-400 mt-2`}>
-                                Give this to your players instead of the raw IP. If you move nodes this keeps working;
-                                DNS changes can take a few minutes to reach everyone.
+                                Players connect with this alone, no port needed. It keeps working if the server moves
+                                nodes or changes port; DNS changes can take a few minutes to reach everyone.
                             </p>
                         </div>
                         <Can action={'subdomain.delete'}>

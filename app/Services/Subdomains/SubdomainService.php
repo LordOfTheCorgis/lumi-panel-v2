@@ -54,6 +54,7 @@ class SubdomainService
         $domain = $this->baseDomain();
         $fqdn = $label . '.' . $domain;
         $target = $this->resolveTarget($server);
+        $port = $server->allocation?->port;
 
         // A name that exists in the zone but not in our table is either an
         // orphan from a failed cleanup or something an admin added by hand.
@@ -62,30 +63,38 @@ class SubdomainService
             throw new DisplayException('That subdomain is already in use. Please pick another.');
         }
 
-        $subdomain = $this->connection->transaction(function () use ($server, $label, $domain, $target) {
+        $subdomain = $this->connection->transaction(function () use ($server, $label, $domain, $target, $port) {
             return ServerSubdomain::query()->create([
                 'server_id' => $server->id,
                 'subdomain' => $label,
                 'domain' => $domain,
                 'zone_id' => (string) config('subdomains.cloudflare.zone_id'),
                 'record_target' => $target,
+                'record_port' => $port,
             ]);
         });
 
+        $comment = sprintf('Lumi Panel: server %s', $server->uuidShort);
+        $recordId = null;
+
         try {
-            $recordId = $this->cloudflare->createARecord(
-                $fqdn,
-                $target,
-                sprintf('Lumi Panel: server %s', $server->uuidShort)
-            );
+            $recordId = $this->cloudflare->createARecord($fqdn, $target, $comment);
+
+            // The SRV record is what removes the port from the address players
+            // type. Without it the name still works, but only with ":port".
+            $srvRecordId = $port ? $this->cloudflare->createSrvRecord($fqdn, $port, $comment) : null;
         } catch (DisplayException $exception) {
-            // Don't leave a row claiming a name that has no record behind it.
+            // Don't leave a row claiming a name that has no record behind it,
+            // or a stray A record if the SRV half failed.
+            if ($recordId) {
+                $this->cloudflare->deleteRecord($recordId);
+            }
             $subdomain->delete();
 
             throw $exception;
         }
 
-        $subdomain->forceFill(['record_id' => $recordId])->save();
+        $subdomain->forceFill(['record_id' => $recordId, 'srv_record_id' => $srvRecordId])->save();
 
         return $subdomain;
     }
@@ -97,6 +106,10 @@ class SubdomainService
     {
         if ($subdomain->record_id) {
             $this->cloudflare->deleteRecord($subdomain->record_id);
+        }
+
+        if ($subdomain->srv_record_id) {
+            $this->cloudflare->deleteRecord($subdomain->srv_record_id);
         }
 
         $subdomain->delete();
@@ -128,18 +141,29 @@ class SubdomainService
             return;
         }
 
-        if ($target === $subdomain->record_target) {
-            return;
+        $port = $server->allocation?->port;
+        $comment = sprintf('Lumi Panel: server %s', $server->uuidShort);
+
+        if ($target !== $subdomain->record_target) {
+            $this->cloudflare->updateARecord($subdomain->record_id, $subdomain->fqdn, $target, $comment);
+            $subdomain->forceFill(['record_target' => $target])->save();
         }
 
-        $this->cloudflare->updateARecord(
-            $subdomain->record_id,
-            $subdomain->fqdn,
-            $target,
-            sprintf('Lumi Panel: server %s', $server->uuidShort)
-        );
+        // The primary allocation can change independently of the node, which
+        // moves the port without moving the address.
+        if ($port && $port !== $subdomain->record_port) {
+            if ($subdomain->srv_record_id) {
+                $this->cloudflare->updateSrvRecord($subdomain->srv_record_id, $subdomain->fqdn, $port, $comment);
+            } else {
+                // Claimed before SRV support existed, or the SRV half failed
+                // at create time. Either way, backfill it.
+                $subdomain->forceFill([
+                    'srv_record_id' => $this->cloudflare->createSrvRecord($subdomain->fqdn, $port, $comment),
+                ])->save();
+            }
 
-        $subdomain->forceFill(['record_target' => $target])->save();
+            $subdomain->forceFill(['record_port' => $port])->save();
+        }
     }
 
     /**

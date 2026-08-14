@@ -34,21 +34,27 @@ class SyncSubdomainsCommand extends Command
 
         ServerSubdomain::query()->with('server.allocation', 'server.node')->chunkById(100, function ($subdomains) use ($service, $dryRun, &$changed, &$failed) {
             foreach ($subdomains as $subdomain) {
-                $before = $subdomain->record_target;
+                $before = [$subdomain->record_target, $subdomain->record_port];
 
                 try {
                     if ($dryRun) {
                         // Cheap read-only comparison; sync() would write.
-                        $this->line(sprintf('  %s currently points at %s', $subdomain->fqdn, $before ?: 'nothing'));
+                        $this->line(sprintf('  %s currently points at %s:%s', $subdomain->fqdn, $before[0] ?: 'nothing', $before[1] ?: '?'));
 
                         continue;
                     }
 
                     $service->sync($subdomain);
 
-                    if ($subdomain->refresh()->record_target !== $before) {
+                    $after = [$subdomain->refresh()->record_target, $subdomain->record_port];
+                    if ($after !== $before) {
                         ++$changed;
-                        $this->components->info(sprintf('%s: %s -> %s', $subdomain->fqdn, $before ?: 'nothing', $subdomain->record_target));
+                        $this->components->info(sprintf(
+                            '%s: %s:%s -> %s:%s',
+                            $subdomain->fqdn,
+                            $before[0] ?: 'nothing', $before[1] ?: '?',
+                            $after[0] ?: 'nothing', $after[1] ?: '?'
+                        ));
                     }
                 } catch (\Exception $exception) {
                     ++$failed;
