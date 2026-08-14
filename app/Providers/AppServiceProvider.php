@@ -45,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
             'egg_variable' => Models\EggVariable::class,
             'schedule' => Models\Schedule::class,
             'server' => Models\Server::class,
+            'server_subdomain' => Models\ServerSubdomain::class,
             'ssh_key' => Models\UserSSHKey::class,
             'task' => Models\Task::class,
             'user' => Models\User::class,

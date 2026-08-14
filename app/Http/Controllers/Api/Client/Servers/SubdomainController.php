@@ -27,11 +27,17 @@ class SubdomainController extends ClientApiController
     {
         $subdomain = $server->subdomain;
 
+        // PterodactylSerializer returns ['object' => ..., 'attributes' => ...]
+        // for an item - no JSON:API "data" wrapper - so pull attributes off the
+        // top level. Hand-built rather than returned straight through because
+        // this endpoint answers "is there one" and "what are the rules" too.
+        $transformed = $subdomain === null ? null : $this->fractal->item($subdomain)
+            ->transformWith($this->getTransformer(SubdomainTransformer::class))
+            ->toArray();
+
         return [
             'object' => 'server_subdomain',
-            'attributes' => $subdomain === null ? null : $this->fractal->item($subdomain)
-                ->transformWith($this->getTransformer(SubdomainTransformer::class))
-                ->toArray()['data']['attributes'],
+            'attributes' => $transformed['attributes'] ?? null,
             'meta' => [
                 'enabled' => $this->service->enabled(),
                 'domain' => $this->service->baseDomain(),
