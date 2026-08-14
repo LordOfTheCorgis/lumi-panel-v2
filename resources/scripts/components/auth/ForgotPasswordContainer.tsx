@@ -11,7 +11,7 @@ import { object, string } from 'yup';
 import tw from 'twin.macro';
 import Button from '@/components/elements/Button';
 import Reaptcha from 'reaptcha';
-import Portal from '@/components/elements/Portal';
+import { createPortal } from 'react-dom';
 import useFlash from '@/plugins/useFlash';
 
 interface Values {
@@ -87,15 +87,17 @@ export default () => {
                             Send Email
                         </Button>
                     </div>
-                    {recaptchaEnabled && (
-                        // Rendered outside the card on purpose. The auth card's
+                    {recaptchaEnabled &&
+                        // Rendered on document.body on purpose. The auth card's
                         // reveal animations leave an identity transform behind
                         // (fill-mode: both), and a transformed ancestor becomes
                         // the containing block for position: fixed - so Google's
                         // badge anchored itself to the form and got clipped by
                         // the card's overflow: hidden instead of pinning to the
-                        // viewport corner.
-                        <Portal>
+                        // viewport corner. Not the shared #modal-portal element:
+                        // the auth blade only renders #app, so that node doesn't
+                        // exist here.
+                        createPortal(
                             <Reaptcha
                                 ref={ref}
                                 size={'invisible'}
@@ -108,9 +110,9 @@ export default () => {
                                     setSubmitting(false);
                                     setToken('');
                                 }}
-                            />
-                        </Portal>
-                    )}
+                            />,
+                            document.body
+                        )}
                     <div css={tw`mt-6 text-center`}>
                         <Link to={'/auth/login'} className={AuthLinkStyle}>
                             Return to Login

@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Pterodactyl\Models\User;
 use Pterodactyl\Models\Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\SessionGuard;
 use Pterodactyl\Facades\Activity;
 use Illuminate\Database\Eloquent\Collection;
 use Pterodactyl\Transformers\Api\Client\SessionTransformer;
@@ -85,7 +86,14 @@ class SessionController extends ClientApiController
         $user->setRememberToken(Str::random(60));
         $user->save();
 
-        Auth::guard()->login($user, true);
+        // Explicitly the web guard. Auth::guard() with no argument resolves to
+        // whatever is active for the request, which on /api/client is Sanctum's
+        // RequestGuard - a token guard with no login() at all. Only the session
+        // guard can re-issue the recaller cookie.
+        $guard = Auth::guard('web');
+        if ($guard instanceof SessionGuard) {
+            $guard->login($user, true);
+        }
     }
 
     /**
