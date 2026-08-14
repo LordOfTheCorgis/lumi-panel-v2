@@ -42,6 +42,7 @@ class SubdomainService
     public function create(Server $server, string $label): ServerSubdomain
     {
         $this->assertEnabled();
+        $this->assertZoneMatchesDomain();
 
         $label = $this->normalize($label);
         $this->assertValidLabel($label);
@@ -242,6 +243,31 @@ class SubdomainService
             FILTER_VALIDATE_IP,
             FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
         );
+    }
+
+    /**
+     * Refuse to write anything if the configured zone isn't the configured
+     * domain. Getting this wrong doesn't error at Cloudflare - it appends the
+     * real zone to whatever you send, so every record comes out as
+     * "name.intended-domain.actual-zone" and nothing resolves.
+     *
+     * @throws DisplayException
+     */
+    public function assertZoneMatchesDomain(): void
+    {
+        $zone = $this->cloudflare->zoneName();
+        $domain = strtolower($this->baseDomain());
+
+        if ($zone !== $domain) {
+            Log::error('Subdomain zone mismatch; refusing to write DNS records.', [
+                'configured_domain' => $domain,
+                'zone_actually_is' => $zone,
+            ]);
+
+            throw new DisplayException(
+                'Subdomains are misconfigured on this panel: the Cloudflare zone does not match the configured domain. An administrator needs to fix this.'
+            );
+        }
     }
 
     /**

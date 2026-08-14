@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Subdomains;
 
 use GuzzleHttp\Client;
 use Psr\Log\LoggerInterface;
+use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\GuzzleException;
 use Pterodactyl\Exceptions\DisplayException;
 
@@ -98,6 +99,26 @@ class CloudflareClient
         return $response[0] ?? null;
     }
 
+    /**
+     * The domain the configured zone ID actually belongs to.
+     *
+     * Worth an API call because Cloudflare does not reject a record whose name
+     * falls outside the zone - it treats it as a relative label and appends the
+     * zone name, so pointing at the wrong zone silently produces records like
+     * "myserver.playlumix.gg.playlumix.us" instead of failing. Cached because
+     * a zone's name effectively never changes.
+     *
+     * @throws DisplayException
+     */
+    public function zoneName(): string
+    {
+        return Cache::remember('subdomains.zone_name.' . $this->zone(), now()->addHour(), function () {
+            $response = $this->request('GET', "/zones/{$this->zone()}");
+
+            return strtolower($response['name'] ?? '');
+        });
+    }
+
     private function zone(): string
     {
         return (string) config('subdomains.cloudflare.zone_id');
@@ -112,7 +133,6 @@ class CloudflareClient
     private function request(string $method, string $path, array $payload = null): array
     {
         $client = new Client([
-            'base_uri' => self::API,
             'timeout' => 15,
             'headers' => [
                 'Authorization' => 'Bearer ' . config('subdomains.cloudflare.token'),
@@ -121,7 +141,10 @@ class CloudflareClient
         ]);
 
         try {
-            $response = $client->request($method, $path, $payload === null ? [] : ['json' => $payload]);
+            // Full URL rather than base_uri + relative path on purpose: Guzzle
+            // resolves per RFC 3986, so a path starting with "/" replaces the
+            // base path and silently drops the /client/v4 prefix.
+            $response = $client->request($method, self::API . $path, $payload === null ? [] : ['json' => $payload]);
             $body = json_decode($response->getBody()->getContents(), true);
         } catch (GuzzleException $exception) {
             // Try to surface Cloudflare's message rather than a bare 400.
