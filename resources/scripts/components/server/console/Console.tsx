@@ -75,25 +75,58 @@ export default () => {
         z-index: 10;
     }`;
 
+    // Writing straight to xterm on every socket message janks hard during a
+    // log flood (server boot/restart can fire hundreds of lines in a burst).
+    // Instead queue lines and flush once per animation frame, batched into a
+    // single write() call - smooth rendering at the cost of falling a frame
+    // or two behind reality under heavy load, which is the trade we want.
+    const outputBuffer = useRef<string[]>([]);
+    const flushFrame = useRef<number | null>(null);
+
+    const scheduleFlush = () => {
+        if (flushFrame.current !== null) return;
+        flushFrame.current = requestAnimationFrame(() => {
+            flushFrame.current = null;
+            if (outputBuffer.current.length) {
+                terminal.write(outputBuffer.current.join(''));
+                outputBuffer.current = [];
+            }
+        });
+    };
+
+    const queueLine = (line: string) => {
+        outputBuffer.current.push(line + '\r\n');
+        scheduleFlush();
+    };
+
+    const clearTerminal = () => {
+        if (flushFrame.current !== null) {
+            cancelAnimationFrame(flushFrame.current);
+            flushFrame.current = null;
+        }
+        outputBuffer.current = [];
+        terminal.clear();
+    };
+
     const handleConsoleOutput = (line: string, prelude = false) =>
-        terminal.writeln((prelude ? TERMINAL_PRELUDE : '') + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m');
+        queueLine((prelude ? TERMINAL_PRELUDE : '') + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m');
 
     const handleTransferStatus = (status: string) => {
         switch (status) {
             // Sent by either the source or target node if a failure occurs.
             case 'failure':
-                terminal.writeln(TERMINAL_PRELUDE + 'Transfer has failed.\u001b[0m');
+                queueLine(TERMINAL_PRELUDE + 'Transfer has failed.\u001b[0m');
                 return;
         }
     };
 
     const handleDaemonErrorOutput = (line: string) =>
-        terminal.writeln(
+        queueLine(
             TERMINAL_PRELUDE + '\u001b[1m\u001b[41m' + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m'
         );
 
     const handlePowerChangeEvent = (state: string) =>
-        terminal.writeln(TERMINAL_PRELUDE + 'Server marked as ' + state + '...\u001b[0m');
+        queueLine(TERMINAL_PRELUDE + 'Server marked as ' + state + '...\u001b[0m');
 
     const handleCommandKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'ArrowUp') {
@@ -192,7 +225,7 @@ export default () => {
         if (connected && instance) {
             // Do not clear the console if the server is being transferred.
             if (!isTransferring) {
-                terminal.clear();
+                clearTerminal();
             }
 
             Object.keys(listeners).forEach((key: string) => {
@@ -209,6 +242,14 @@ export default () => {
             }
         };
     }, [connected, instance]);
+
+    useEffect(() => {
+        return () => {
+            if (flushFrame.current !== null) {
+                cancelAnimationFrame(flushFrame.current);
+            }
+        };
+    }, []);
 
     return (
         <div className={classNames(styles.terminal, 'relative')}>
