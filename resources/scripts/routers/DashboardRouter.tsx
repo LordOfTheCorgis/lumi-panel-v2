@@ -2,7 +2,7 @@ import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import AnnouncementBar from '@/components/AnnouncementBar';
-import { faCreditCard, faHeartbeat } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faCreditCard, faHeartbeat } from '@fortawesome/free-solid-svg-icons';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { NotFound } from '@/components/elements/ScreenBlock';
 import TransitionRouter from '@/TransitionRouter';
@@ -35,6 +35,9 @@ export default () => {
                 <Sidebar.Section label={'Lumix Solutions'}>
                     <Sidebar.ExternalLink href={'https://billing.lumixsolutions.org/'} icon={faCreditCard} newTab>
                         Billing
+                    </Sidebar.ExternalLink>
+                    <Sidebar.ExternalLink href={'https://docs.lumixsolutions.org/'} icon={faBook} newTab>
+                        Docs
                     </Sidebar.ExternalLink>
                     <Sidebar.ExternalLink href={'https://status.lumixsolutions.org'} icon={faHeartbeat} newTab>
                         Status
