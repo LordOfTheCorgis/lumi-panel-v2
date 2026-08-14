@@ -61,17 +61,17 @@ export default () => {
                     <p css={tw`text-sm text-neutral-300 mb-4`}>
                         {players.length} {players.length === 1 ? 'player is' : 'players are'} currently connected.
                     </p>
-                    {players.map((player, index) => (
-                        <GreyRowBox key={player.id} $hoverable={false} css={index > 0 ? tw`mt-1` : undefined}>
-                            <div css={tw`flex-1 ml-2`}>
-                                <p css={tw`text-sm`}>{player.name}</p>
-                            </div>
-                            <div css={tw`ml-8 text-center`}>
-                                <p css={tw`text-sm`}>{player.ping}ms</p>
-                                <p css={tw`mt-1 text-2xs text-neutral-500 uppercase select-none`}>Ping</p>
-                            </div>
-                        </GreyRowBox>
-                    ))}
+                    <div css={tw`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2`}>
+                        {players.map((player) => (
+                            <GreyRowBox key={player.id} $hoverable={false} css={tw`flex-col items-start`}>
+                                <p css={tw`text-sm w-full truncate`}>{player.name}</p>
+                                <div css={tw`mt-2`}>
+                                    <p css={tw`text-sm`}>{player.ping}ms</p>
+                                    <p css={tw`mt-1 text-2xs text-neutral-500 uppercase select-none`}>Ping</p>
+                                </div>
+                            </GreyRowBox>
+                        ))}
+                    </div>
                 </>
             )}
         </ServerContentBlock>
