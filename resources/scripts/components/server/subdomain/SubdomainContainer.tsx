@@ -89,13 +89,14 @@ const SubdomainContainer = () => {
                     <div css={tw`sm:flex items-center justify-between`}>
                         <div css={tw`min-w-0`}>
                             <CopyOnClick text={subdomain.fqdn}>
-                                <Code dark className={'truncate'}>
+                                <Code dark className={'truncate hover:bg-neutral-700 transition-colors duration-150'}>
                                     {subdomain.fqdn}
                                 </Code>
                             </CopyOnClick>
                             <p css={tw`text-xs text-neutral-400 mt-2`}>
-                                Players connect with this alone, no port needed. It keeps working if the server moves
-                                nodes or changes port; DNS changes can take a few minutes to reach everyone.
+                                Click to copy. Players connect with this alone, no port needed. It keeps working if the
+                                server moves nodes or changes port; DNS changes can take a few minutes to reach
+                                everyone.
                             </p>
                         </div>
                         <Can action={'subdomain.delete'}>
