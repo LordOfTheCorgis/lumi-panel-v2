@@ -99,6 +99,42 @@ class CrashAnalyserTest extends TestCase
         $this->assertSame(ServerIncident::CAUSE_BAD_RESOURCE, $result->cause);
     }
 
+    public function testDockersOwnOomFlagBeatsEverythingElseInTheLog(): void
+    {
+        // A server can print a resource error on its way out and still have died
+        // because the kernel took it. The kernel is the one telling the truth.
+        $result = $this->analyser->analyse('Could not start resource esx_ambulancejob', [
+            'oom_killed' => true,
+        ]);
+
+        $this->assertSame(ServerIncident::CAUSE_OUT_OF_MEMORY, $result->cause);
+    }
+
+    public function testItReadsExitCode137AsMemory(): void
+    {
+        $result = $this->analyser->analyse('', ['exit_code' => 137]);
+
+        $this->assertSame(ServerIncident::CAUSE_OUT_OF_MEMORY, $result->cause);
+    }
+
+    public function testARealErrorInTheLogOutranksTheExitCode(): void
+    {
+        $result = $this->analyser->analyse('**** FAILED TO BIND TO PORT!', ['exit_code' => 137]);
+
+        $this->assertSame(ServerIncident::CAUSE_PORT_CONFLICT, $result->cause);
+    }
+
+    public function testItQuotesTheExitCodeWhenItHasNothingElse(): void
+    {
+        $result = $this->analyser->analyse('nothing recognisable here', [
+            'exit_code' => 1,
+            'uptime_seconds' => 86400,
+        ]);
+
+        $this->assertSame(ServerIncident::CAUSE_UNKNOWN, $result->cause);
+        $this->assertStringContainsString('code 1', $result->summary);
+    }
+
     public function testItSeparatesNeverStartedFromFellOverLater(): void
     {
         $result = $this->analyser->analyse('some output nobody has a signature for', ['uptime_seconds' => 12]);

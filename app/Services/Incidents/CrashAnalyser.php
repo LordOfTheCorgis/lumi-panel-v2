@@ -5,8 +5,7 @@ namespace Pterodactyl\Services\Incidents;
 use Pterodactyl\Models\ServerIncident;
 
 /**
- * Turns a log tail and whatever we sampled off the node into a sentence a
- * customer can act on.
+ * Turns a crash report from wings into a sentence a customer can act on.
  *
  * This is deliberately a pile of string matching rather than anything clever.
  * Game servers die in a small number of well-known ways and each one prints
@@ -14,8 +13,14 @@ use Pterodactyl\Models\ServerIncident;
  * of memory" correctly is worth more to someone at 3am than a model that says
  * "anomalous termination" with a confidence score.
  *
- * Ordering matters. The list runs top to bottom and the first hit wins, so the
- * specific signatures have to sit above the general ones.
+ * It lives on the Panel rather than in wings on purpose. Signatures change every
+ * time a game updates its error strings, and changing one here is a deploy;
+ * changing one in wings is a deploy to every node you own.
+ *
+ * Ordering matters, and the ordering is by how much the evidence is worth.
+ * Docker's own OOM flag is ground truth. The log is inference. A memory reading
+ * near the limit is a guess. They go in that order, and within the log the
+ * specific signatures sit above the general ones.
  */
 class CrashAnalyser
 {
@@ -98,10 +103,19 @@ class CrashAnalyser
     }
 
     /**
-     * @param array{memory_bytes?: int|null, memory_limit_bytes?: int|null, uptime_seconds?: int|null} $context
+     * @param array{exit_code?: int|null, oom_killed?: bool|null, memory_bytes?: int|null, memory_limit_bytes?: int|null, uptime_seconds?: int|null} $context
      */
     public function analyse(?string $logTail, array $context = []): CrashAnalysis
     {
+        // The kernel already told wings exactly what happened here. Nothing in
+        // the log can outrank that, and an OOM kill usually leaves no log at all.
+        if (($context['oom_killed'] ?? false) === true) {
+            return new CrashAnalysis(
+                ServerIncident::CAUSE_OUT_OF_MEMORY,
+                $this->enrich(ServerIncident::CAUSE_OUT_OF_MEMORY, 'Ran out of memory and was killed.', $context)
+            );
+        }
+
         $tail = trim((string) $logTail);
 
         if ($tail !== '') {
@@ -117,8 +131,18 @@ class CrashAnalyser
             }
         }
 
-        // Nothing in the log, which is itself informative: a container killed for
-        // exceeding its memory limit rarely gets to say so.
+        // 137 is SIGKILL, which on a container almost always means the memory
+        // limit. Below the log signatures because a server that printed a real
+        // error and then got killed on the way out should be reported as the
+        // real error.
+        if (($context['exit_code'] ?? null) === 137) {
+            return new CrashAnalysis(
+                ServerIncident::CAUSE_OUT_OF_MEMORY,
+                $this->enrich(ServerIncident::CAUSE_OUT_OF_MEMORY, 'Killed by the host, almost certainly for using too much memory.', $context)
+            );
+        }
+
+        // Nothing conclusive, so fall back to what it was using when it died.
         if ($this->underMemoryPressure($context)) {
             return new CrashAnalysis(
                 ServerIncident::CAUSE_OUT_OF_MEMORY,
@@ -134,9 +158,13 @@ class CrashAnalyser
             );
         }
 
+        $exitCode = $context['exit_code'] ?? null;
+
         return new CrashAnalysis(
             ServerIncident::CAUSE_UNKNOWN,
-            'Stopped on its own and did not say why. The last of the console output is below.'
+            is_int($exitCode) && $exitCode !== 0
+                ? sprintf('Exited with code %d and did not say why. The last of the console output is below.', $exitCode)
+                : 'Stopped on its own and did not say why. The last of the console output is below.'
         );
     }
 
