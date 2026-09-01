@@ -8,6 +8,7 @@ import {
     faDatabase,
     faFolderOpen,
     faGlobe,
+    faHeartbeat,
     faKey,
     faNetworkWired,
     faPlay,
@@ -18,6 +19,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import ServerConsole from '@/components/server/console/ServerConsoleContainer';
 import PlayersContainer from '@/components/server/players/PlayersContainer';
+import IncidentsContainer from '@/components/server/incidents/IncidentsContainer';
 import DatabasesContainer from '@/components/server/databases/DatabasesContainer';
 import ScheduleContainer from '@/components/server/schedules/ScheduleContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
@@ -110,6 +112,16 @@ export default {
             icon: faTerminal,
             component: ServerConsole,
             exact: true,
+        },
+        {
+            path: '/incidents',
+            // Crash reports are server history, so they ride on the activity
+            // permission rather than a group of their own.
+            permission: 'activity.*',
+            name: 'Crash Reports',
+            group: 'Server',
+            icon: faHeartbeat,
+            component: IncidentsContainer,
         },
         {
             path: '/files',
