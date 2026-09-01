@@ -31,6 +31,10 @@ return new class () extends Migration {
             // limit, cpu, how long it had been up.
             $table->json('context')->nullable();
 
+            // A server stuck in a boot loop is one incident that happened forty
+            // times, not forty incidents. updated_at carries the last of them.
+            $table->unsignedInteger('occurrences')->default(1);
+
             $table->timestamp('acknowledged_at')->nullable();
             $table->timestamps();
 

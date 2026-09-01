@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $summary
  * @property string|null $log_tail
  * @property array|null $context
+ * @property int $occurrences
  * @property Carbon|null $acknowledged_at
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -43,6 +44,7 @@ class ServerIncident extends Model
     protected $casts = [
         'id' => 'int',
         'server_id' => 'int',
+        'occurrences' => 'int',
         'context' => 'array',
         'occurred_at' => 'datetime',
         'detected_at' => 'datetime',

@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Discord;
 
 use Pterodactyl\Models\User;
 use Pterodactyl\Models\Server;
+use Pterodactyl\Models\ServerIncident;
 
 /**
  * The actual messages we send. Kept apart from DiscordService so the transport
@@ -63,6 +64,43 @@ class DiscordNotifier
         $this->discord->notify($server->user, [
             'title' => 'Server Unsuspended',
             'description' => sprintf('**%s** is active again and can be started.', $server->name),
+        ]);
+    }
+
+    /**
+     * The server fell over on its own. This is the one notification people
+     * actually want, so it leads with the answer instead of the event: they
+     * already know it crashed, what they don't know is why.
+     */
+    public function serverCrashed(Server $server, ServerIncident $incident): void
+    {
+        $restarted = ($incident->context['restarted'] ?? false) === true;
+
+        $fields = [
+            ['name' => 'Server', 'value' => $server->name, 'inline' => true],
+            ['name' => 'Time', 'value' => $incident->occurred_at->toDayDateTimeString(), 'inline' => true],
+        ];
+
+        if ($incident->log_tail) {
+            // Discord caps a field at 1024 characters and silently rejects the
+            // whole message if you go over, so this gets its own hard trim.
+            $lines = array_slice(explode("\n", $incident->log_tail), -8);
+            $excerpt = substr(implode("\n", $lines), -900);
+
+            $fields[] = ['name' => 'Last words', 'value' => '```' . $excerpt . '```'];
+        }
+
+        $fields[] = [
+            'name' => 'What now?',
+            'value' => $restarted
+                ? 'It has already been started again. The full report and log are on the panel.'
+                : 'It is still down. Start it from the panel, where the full report and log are waiting.',
+        ];
+
+        $this->discord->notify($server->user, [
+            'title' => 'Server Crashed',
+            'description' => sprintf('**%s** stopped on its own. %s', $server->name, $incident->summary),
+            'fields' => $fields,
         ]);
     }
 

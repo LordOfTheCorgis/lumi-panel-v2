@@ -381,6 +381,16 @@ class Server extends Model implements Identifiable
     }
 
     /**
+     * Crash reports filed against this server, newest first.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\Pterodactyl\Models\ServerIncident, $this>
+     */
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(ServerIncident::class)->orderByDesc('occurred_at');
+    }
+
+    /**
      * Returns all of the activity log entries where the server is the subject.
      *
      * @return \Illuminate\Database\Eloquent\Relations\MorphToMany<\Pterodactyl\Models\ActivityLog, $this>
