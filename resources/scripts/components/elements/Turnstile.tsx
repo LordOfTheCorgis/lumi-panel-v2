@@ -39,20 +39,27 @@ const loadScript = (): Promise<void> => {
 
     scriptPromise = new Promise((resolve, reject) => {
         const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-        if (existing) {
-            existing.addEventListener('load', () => resolve());
-            existing.addEventListener('error', () => reject(new Error('Failed to load Turnstile.')));
-            return;
-        }
+        const script = existing ?? document.createElement('script');
 
-        const script = document.createElement('script');
-        script.id = SCRIPT_ID;
-        script.src = SCRIPT_SRC;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Turnstile.'));
-        document.head.appendChild(script);
+        const fail = () => {
+            // Drop the cached promise and the dead <script> tag so the next
+            // mount (navigating back to /auth/login, say) actually retries
+            // instead of re-awaiting a promise that already rejected.
+            scriptPromise = null;
+            script.remove();
+            reject(new Error('Failed to load Turnstile.'));
+        };
+
+        script.addEventListener('load', () => resolve());
+        script.addEventListener('error', fail);
+
+        if (!existing) {
+            script.id = SCRIPT_ID;
+            script.src = SCRIPT_SRC;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
     });
 
     return scriptPromise;
