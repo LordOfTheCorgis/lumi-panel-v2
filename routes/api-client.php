@@ -111,6 +111,11 @@ Route::group([
         Route::get('/upload', Client\Servers\FileUploadController::class);
     });
 
+    Route::group(['prefix' => '/incidents'], function () {
+        Route::get('/', [Client\Servers\IncidentController::class, 'index']);
+        Route::post('/{incident}/acknowledge', [Client\Servers\IncidentController::class, 'acknowledge']);
+    });
+
     Route::group(['prefix' => '/schedules'], function () {
         Route::get('/', [Client\Servers\ScheduleController::class, 'index']);
         Route::middleware([ResourceLimit::Schedule->middleware()])
