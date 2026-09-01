@@ -17,6 +17,7 @@ import { usePersistedState } from '@/plugins/usePersistedState';
 import { SocketEvent, SocketRequest } from '@/components/server/events';
 import classNames from 'classnames';
 import { ChevronDoubleRightIcon } from '@heroicons/react/solid';
+import { PacedWriter } from '@/lib/console/paced-writer';
 
 import 'xterm/css/xterm.css';
 import styles from './style.module.css';
@@ -75,52 +76,53 @@ export default () => {
         z-index: 10;
     }`;
 
-    // Writing straight to xterm on every socket message janks hard during a
-    // log flood (server boot/restart can fire hundreds of lines in a burst).
-    // Queue lines and drain them a bounded chunk at a time, once per animation
-    // frame. Capping the chunk size matters as much as the batching itself -
-    // one write() call for an entire multi-hundred-line backlog can still
-    // block the main thread past a frame budget and cause a visible hitch.
-    // Keeping every frame's write() small guarantees steady, hitch-free
-    // scrolling; a big backlog just drains over a few extra frames instead of
-    // one, which is exactly the "fall behind a little, stay smooth" trade.
-    const MAX_LINES_PER_FRAME = 50;
-    // Backlog beyond this is going to scroll off the default 1000-line
-    // scrollback the moment it's written anyway, so there's no point holding
-    // (or spending frames draining) more of it than that in memory.
-    const MAX_BUFFERED_LINES = 2000;
+    // The element xterm paints rows into. We slide it around to hide the fact
+    // that the buffer underneath only ever moves in whole rows; see PacedWriter.
+    const screen = useRef<HTMLElement | null>(null);
 
-    const outputBuffer = useRef<string[]>([]);
-    const flushFrame = useRef<number | null>(null);
+    // Someone who has asked for less motion gets the old behaviour: every line
+    // written the moment it lands, no glide.
+    const reducedMotion = useMemo(
+        () =>
+            typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        []
+    );
 
-    const scheduleFlush = () => {
-        if (flushFrame.current !== null) return;
-        flushFrame.current = requestAnimationFrame(() => {
-            flushFrame.current = null;
-            if (outputBuffer.current.length) {
-                const chunk = outputBuffer.current.splice(0, MAX_LINES_PER_FRAME);
-                terminal.write(chunk.join(''));
-                if (outputBuffer.current.length) {
-                    scheduleFlush();
-                }
-            }
-        });
-    };
+    const writer = useMemo(
+        () =>
+            new PacedWriter(
+                {
+                    write: (chunk, lines) => {
+                        // Rows still empty below the cursor absorb lines without
+                        // scrolling anything, and only the overflow actually moves
+                        // the view.
+                        const free = Math.max(0, terminal.rows - 1 - terminal.buffer.active.cursorY);
 
-    const queueLine = (line: string) => {
-        outputBuffer.current.push(line + '\r\n');
-        if (outputBuffer.current.length > MAX_BUFFERED_LINES) {
-            outputBuffer.current.splice(0, outputBuffer.current.length - MAX_BUFFERED_LINES);
-        }
-        scheduleFlush();
-    };
+                        terminal.write(chunk);
+
+                        return Math.max(0, lines - free);
+                    },
+                    setOffset: (pixels) => {
+                        if (screen.current) {
+                            screen.current.style.transform = pixels > 0 ? `translateY(${pixels}px)` : '';
+                        }
+                    },
+                    // Measured rather than assumed: font size, zoom and the fit
+                    // addon all move this around.
+                    rowHeight: () => (screen.current ? screen.current.clientHeight / terminal.rows : 0),
+                    pinnedToBottom: () => terminal.buffer.active.viewportY === terminal.buffer.active.baseY,
+                },
+                { smooth: !reducedMotion }
+            ),
+        [terminal, reducedMotion]
+    );
+
+    const queueLine = (line: string) => writer.push(line + '\r\n');
 
     const clearTerminal = () => {
-        if (flushFrame.current !== null) {
-            cancelAnimationFrame(flushFrame.current);
-            flushFrame.current = null;
-        }
-        outputBuffer.current = [];
+        writer.clear();
         terminal.clear();
     };
 
@@ -137,9 +139,7 @@ export default () => {
     };
 
     const handleDaemonErrorOutput = (line: string) =>
-        queueLine(
-            TERMINAL_PRELUDE + '\u001b[1m\u001b[41m' + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m'
-        );
+        queueLine(TERMINAL_PRELUDE + '\u001b[1m\u001b[41m' + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m');
 
     const handlePowerChangeEvent = (state: string) =>
         queueLine(TERMINAL_PRELUDE + 'Server marked as ' + state + '...\u001b[0m');
@@ -183,6 +183,20 @@ export default () => {
             terminal.loadAddon(scrollDownHelperAddon);
 
             terminal.open(ref.current);
+
+            // Clip at the terminal, not the card: the search bar mounts a level
+            // up and the scroll-to-bottom button is absolutely positioned inside,
+            // so neither gets caught by this. Queried rather than read off
+            // terminal.element, which TS still thinks is undefined in here.
+            const root = ref.current.querySelector<HTMLElement>('.xterm');
+            if (root) {
+                root.style.overflow = 'hidden';
+            }
+
+            screen.current = ref.current.querySelector<HTMLElement>('.xterm-screen');
+            if (screen.current) {
+                screen.current.style.willChange = 'transform';
+            }
 
             // Render via WebGL instead of the default DOM renderer so heavy output (server
             // boot, restarts) paints smoothly instead of thrashing the DOM. Falls back to
@@ -260,12 +274,8 @@ export default () => {
     }, [connected, instance]);
 
     useEffect(() => {
-        return () => {
-            if (flushFrame.current !== null) {
-                cancelAnimationFrame(flushFrame.current);
-            }
-        };
-    }, []);
+        return () => writer.dispose();
+    }, [writer]);
 
     return (
         <div className={classNames(styles.terminal, 'relative')}>
