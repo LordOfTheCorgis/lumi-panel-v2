@@ -40,3 +40,7 @@ result
 /public/storage
 # Release tarball that gets unpacked over the tree on upgrade.
 /panel.tar.gz
+
+# Python bytecode cache from the leak-scanner tooling.
+__pycache__/
+*.py[cod]
