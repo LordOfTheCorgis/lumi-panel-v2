@@ -18,6 +18,8 @@ import http from '@/api/http';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import Avatar from '@/components/Avatar';
 import Logo from '@/assets/images/logo.png';
+import ExternalRedirectDialog from '@/components/elements/ExternalRedirectDialog';
+import { usePersistedState } from '@/plugins/usePersistedState';
 import {
     SidebarActiveStyle,
     SidebarIconStyle as iconSlot,
@@ -25,11 +27,22 @@ import {
 } from '@/components/elements/SidebarStyles';
 
 /**
- * The drawer is only ever open on small screens; from `md` up the sidebar is a
- * permanent column and this context is inert. Nested links consume it so that
- * following one on mobile closes the drawer behind them.
+ * Shared by the nested link components. `close` exists because the drawer is
+ * only ever open on small screens and following a link should collapse it; the
+ * external-link warning lives here rather than in each link so acknowledging it
+ * on one link takes effect on the others without a reload.
  */
-const DrawerContext = createContext<{ close: () => void }>({ close: () => undefined });
+interface SidebarContextType {
+    close: () => void;
+    warnOnExternal: boolean;
+    suppressExternalWarning: () => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+    close: () => undefined,
+    warnOnExternal: true,
+    suppressExternalWarning: () => undefined,
+});
 
 interface LinkProps {
     to: string;
@@ -39,7 +52,7 @@ interface LinkProps {
 }
 
 const SidebarLink = ({ to, icon, exact = false, children }: LinkProps) => {
-    const { close } = useContext(DrawerContext);
+    const { close } = useContext(SidebarContext);
 
     return (
         <NavLink
@@ -63,32 +76,64 @@ interface ExternalLinkProps {
 }
 
 const SidebarExternalLink = ({ href, icon, newTab = false, children }: ExternalLinkProps) => {
-    const { close } = useContext(DrawerContext);
+    const { close, warnOnExternal, suppressExternalWarning } = useContext(SidebarContext);
+    const [confirming, setConfirming] = useState(false);
+
+    const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // Same-tab links are internal (/admin), so there's nothing to warn about.
+        // Ctrl/cmd/shift clicks get left alone too, otherwise we'd hijack someone
+        // deliberately opening it in a background tab.
+        if (!newTab || !warnOnExternal || e.ctrlKey || e.metaKey || e.shiftKey) {
+            return close();
+        }
+
+        e.preventDefault();
+        setConfirming(true);
+    };
+
+    const onContinue = (remember: boolean) => {
+        if (remember) {
+            suppressExternalWarning();
+        }
+
+        setConfirming(false);
+        close();
+        // Still inside the click that opened the dialog as far as the browser is
+        // concerned, so popup blockers leave this alone.
+        window.open(href, '_blank', 'noopener,noreferrer');
+    };
 
     return (
-        <a
-            href={href}
-            onClick={close}
-            rel={'noreferrer'}
-            {...(newTab ? { target: '_blank' } : {})}
-            className={`group ${SidebarLinkStyle}`}
-        >
-            <span className={iconSlot}>{icon && <FontAwesomeIcon icon={icon} fixedWidth />}</span>
-            <span className={'truncate'}>{children}</span>
-            {/* Only the new-tab links get the arrow. /admin is an external link
-                as far as the router is concerned but it's still this site. */}
-            {newTab && (
-                <>
-                    <FontAwesomeIcon
-                        icon={faExternalLinkAlt}
-                        className={
-                            'ml-auto shrink-0 text-2xs text-neutral-500 transition-colors duration-150 group-hover:text-neutral-300'
-                        }
-                    />
-                    <span className={'sr-only'}>(opens in a new tab)</span>
-                </>
-            )}
-        </a>
+        <>
+            <ExternalRedirectDialog
+                href={confirming ? href : null}
+                onClose={() => setConfirming(false)}
+                onContinue={onContinue}
+            />
+            <a
+                href={href}
+                onClick={onClick}
+                rel={'noreferrer'}
+                {...(newTab ? { target: '_blank' } : {})}
+                className={`group ${SidebarLinkStyle}`}
+            >
+                <span className={iconSlot}>{icon && <FontAwesomeIcon icon={icon} fixedWidth />}</span>
+                <span className={'truncate'}>{children}</span>
+                {/* Only the new-tab links get the arrow. /admin is an external link
+                    as far as the router is concerned but it's still this site. */}
+                {newTab && (
+                    <>
+                        <FontAwesomeIcon
+                            icon={faExternalLinkAlt}
+                            className={
+                                'ml-auto shrink-0 text-2xs text-neutral-500 transition-colors duration-150 group-hover:text-neutral-300'
+                            }
+                        />
+                        <span className={'sr-only'}>(opens in a new tab)</span>
+                    </>
+                )}
+            </a>
+        </>
     );
 };
 
@@ -113,8 +158,14 @@ const Sidebar = ({ children }: Props) => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const name = useStoreState((state: ApplicationStore) => state.settings.data!.name);
+    const uuid = useStoreState((state: ApplicationStore) => state.user.data!.uuid);
     const username = useStoreState((state: ApplicationStore) => state.user.data!.username);
     const rootAdmin = useStoreState((state: ApplicationStore) => state.user.data!.rootAdmin);
+
+    const [externalWarningAcked, setExternalWarningAcked] = usePersistedState<boolean>(
+        `${uuid}:acknowledged_external_links`,
+        false
+    );
 
     // A route change that isn't driven by a sidebar link (browser back, a link in
     // the page body) should still collapse the drawer.
@@ -136,7 +187,13 @@ const Sidebar = ({ children }: Props) => {
     };
 
     return (
-        <DrawerContext.Provider value={{ close: () => setOpen(false) }}>
+        <SidebarContext.Provider
+            value={{
+                close: () => setOpen(false),
+                warnOnExternal: !externalWarningAcked,
+                suppressExternalWarning: () => setExternalWarningAcked(true),
+            }}
+        >
             <SpinnerOverlay visible={isLoggingOut} />
 
             {/* Mobile header. Hidden entirely once the sidebar becomes permanent. */}
@@ -241,7 +298,7 @@ const Sidebar = ({ children }: Props) => {
                     </button>
                 </div>
             </nav>
-        </DrawerContext.Provider>
+        </SidebarContext.Provider>
     );
 };
 
