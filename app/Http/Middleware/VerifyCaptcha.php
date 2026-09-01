@@ -81,7 +81,11 @@ class VerifyCaptcha
             }
         }
 
-        $this->dispatcher->dispatch(new FailedCaptcha($request->ip(), $result->hostname ?? null));
+        // $result is null on every path that never got a 200 back from
+        // siteverify (no token, network error, non-JSON body). Reading ->hostname
+        // straight off it in that case is a PHP warning for no reason.
+        $hostname = is_object($result) ? ($result->hostname ?? null) : null;
+        $this->dispatcher->dispatch(new FailedCaptcha($request->ip(), $hostname));
 
         throw new HttpException(Response::HTTP_BAD_REQUEST, 'Failed to validate CAPTCHA data.');
     }
