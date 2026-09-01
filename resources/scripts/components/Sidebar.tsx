@@ -3,7 +3,14 @@ import { Link, NavLink } from 'react-router-dom';
 import { useLocation } from 'react-router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
-import { faBars, faCogs, faLayerGroup, faSignOutAlt, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {
+    faBars,
+    faCogs,
+    faExternalLinkAlt,
+    faLayerGroup,
+    faSignOutAlt,
+    faTimes,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from 'easy-peasy';
 import { ApplicationStore } from '@/state';
 import SearchContainer from '@/components/dashboard/search/SearchContainer';
@@ -64,10 +71,23 @@ const SidebarExternalLink = ({ href, icon, newTab = false, children }: ExternalL
             onClick={close}
             rel={'noreferrer'}
             {...(newTab ? { target: '_blank' } : {})}
-            className={SidebarLinkStyle}
+            className={`group ${SidebarLinkStyle}`}
         >
             <span className={iconSlot}>{icon && <FontAwesomeIcon icon={icon} fixedWidth />}</span>
             <span className={'truncate'}>{children}</span>
+            {/* Only the new-tab links get the arrow. /admin is an external link
+                as far as the router is concerned but it's still this site. */}
+            {newTab && (
+                <>
+                    <FontAwesomeIcon
+                        icon={faExternalLinkAlt}
+                        className={
+                            'ml-auto shrink-0 text-2xs text-neutral-500 transition-colors duration-150 group-hover:text-neutral-300'
+                        }
+                    />
+                    <span className={'sr-only'}>(opens in a new tab)</span>
+                </>
+            )}
         </a>
     );
 };
