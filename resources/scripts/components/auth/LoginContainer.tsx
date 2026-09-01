@@ -23,12 +23,24 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
     // widget is already working by then, so we submit for them once it lands
     // rather than making them click again.
     const submitWhenVerified = useRef<(() => void) | null>(null);
+    // The "widget never returned" bail-out timer. Held in a ref so it can be
+    // cancelled when the token does land, and torn down if the form unmounts
+    // first - otherwise it fires 15s later into a dead component.
+    const bailTimer = useRef<number | null>(null);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { enabled: captchaEnabled, siteKey } = useStoreState((state) => state.settings.data!.turnstile);
 
+    const clearBailTimer = () => {
+        if (bailTimer.current !== null) {
+            window.clearTimeout(bailTimer.current);
+            bailTimer.current = null;
+        }
+    };
+
     useEffect(() => {
         clearFlashes();
+        return () => clearBailTimer();
     }, []);
 
     const onSubmit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
@@ -41,7 +53,9 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
         if (captchaEnabled && !token) {
             submitWhenVerified.current = () => onSubmit(values, { setSubmitting } as FormikHelpers<Values>);
 
-            window.setTimeout(() => {
+            clearBailTimer();
+            bailTimer.current = window.setTimeout(() => {
+                bailTimer.current = null;
                 if (!submitWhenVerified.current) return;
 
                 submitWhenVerified.current = null;
@@ -99,6 +113,7 @@ const LoginContainer = ({ history }: RouteComponentProps) => {
                                 siteKey={siteKey}
                                 onVerify={(value) => {
                                     setToken(value);
+                                    clearBailTimer();
 
                                     const pending = submitWhenVerified.current;
                                     submitWhenVerified.current = null;
