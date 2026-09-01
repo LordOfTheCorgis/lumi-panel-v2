@@ -19,6 +19,8 @@ class CloudflareClient
 {
     private const API = 'https://api.cloudflare.com/client/v4';
 
+    private ?Client $client = null;
+
     public function __construct(private LoggerInterface $log)
     {
     }
@@ -177,7 +179,10 @@ class CloudflareClient
      */
     private function request(string $method, string $path, array $payload = null): array
     {
-        $client = new Client([
+        // One client per instance, not one per call. A single create() fans out
+        // into an A record, an SRV record and possibly two cleanup deletes, and
+        // there's no reason each of those needs its own connection pool.
+        $client = $this->client ??= new Client([
             'timeout' => 15,
             'headers' => [
                 'Authorization' => 'Bearer ' . config('subdomains.cloudflare.token'),
