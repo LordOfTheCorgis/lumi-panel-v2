@@ -43,7 +43,7 @@
                             <div class="form-group col-md-4">
                                 <label class="control-label">Secret Key</label>
                                 <div>
-                                    <input type="text" class="form-control" name="turnstile:secret_key" value="{{ old('turnstile:secret_key', config('turnstile.secret_key')) }}">
+                                    <input type="password" autocomplete="off" class="form-control" name="turnstile:secret_key" value="{{ old('turnstile:secret_key', config('turnstile.secret_key')) }}">
                                     <p class="text-muted small">Used for server-side verification between your panel and Cloudflare. Keep it secret.</p>
                                 </div>
                             </div>
